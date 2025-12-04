@@ -1,0 +1,84 @@
+<?php
+include("db.php");
+
+// Handle AJAX requests for approve/decline actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+
+    $action = $_POST['action'];
+    $appointment_id = intval($_POST['appointment_id']);
+
+    if ($action === 'approve') {
+        $sql = "UPDATE parent_appointments SET status = 'confirmed' WHERE id = ?";
+        $stmt = $con->prepare($sql);
+        $stmt->bind_param("i", $appointment_id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Appointment approved successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to approve appointment']);
+        }
+        $stmt->close();
+
+    } elseif ($action === 'decline') {
+        $sql = "UPDATE parent_appointments SET status = 'cancelled' WHERE id = ?";
+        $stmt = $con->prepare($sql);
+        $stmt->bind_param("i", $appointment_id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Appointment declined successfully']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to decline appointment']);
+        }
+        $stmt->close();
+    }
+
+    $con->close();
+    exit;
+}
+
+// Fetch appointments
+$appointments = [];
+$sql = "SELECT * FROM parent_appointments ORDER BY created_at DESC";
+$result = $con->query($sql);
+
+if ($result && $result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $appointments[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'email' => $row['email'],
+            'student_id' => $row['student_id'],
+            'date' => $row['date'],
+            'time' => $row['time'],
+            'interest' => $row['interest'],
+            'reason' => $row['reason'],
+            'status' => $row['status'],
+            'created_at' => $row['created_at']
+        ];
+    }
+}
+$appointments_json = json_encode($appointments);
+
+// Statistics
+$totalAppointments = $pendingAppointments = $confirmedAppointments = $cancelledAppointments = 0;
+
+$sqlStats = "SELECT 
+                COUNT(*) AS total,
+                SUM(status='pending') AS pending,
+                SUM(status='confirmed') AS confirmed,
+                SUM(status='cancelled') AS cancelled
+             FROM parent_appointments";
+
+$resultStats = $con->query($sqlStats);
+
+if ($resultStats && $resultStats->num_rows > 0) {
+    $stats = $resultStats->fetch_assoc();
+    $totalAppointments = $stats['total'];
+    $pendingAppointments = $stats['pending'];
+    $confirmedAppointments = $stats['confirmed'];
+    $cancelledAppointments = $stats['cancelled'];
+}
+
+$con->close();
+?>

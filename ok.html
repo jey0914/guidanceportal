@@ -1,0 +1,667 @@
+<?php
+session_start();
+include("db.php");
+
+if (!isset($_SESSION['email'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$email = $_SESSION['email'];
+
+// Fetch user info from database
+$stmt = $con->prepare("SELECT fname, strand_course, year_level FROM form WHERE email = ?");
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+
+$fname = $user['fname'];
+$strand_course = isset($user['strand_course']) ? $user['strand_course'] : "";
+$year_level = isset($user['year_level']) ? $user['year_level'] : "";
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Guidance Portal - Student Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<style>
+      box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        
+    * {
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+    .sidebar-expanded { width: 280px; }
+    .sidebar-collapsed { width: 80px; }
+    .main-content-expanded { margin-left: 280px; }
+    .main-content-collapsed { margin-left: 80px; }
+    .sidebar-text { opacity: 1; transition: opacity 0.3s ease; }
+    .sidebar-collapsed .sidebar-text { opacity: 0; pointer-events: none; }
+
+
+    .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:nth-child(2) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .category-card:nth-child(3) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .category-card:nth-child(4) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .category-card:nth-child(5) {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .category-card:nth-child(6) {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+    .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+
+     .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+
+    .sidebar {
+    background: white;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+    padding: 20px;
+    color: #1d3557; /* Dark text for contrast on white */
+    transition: width 0.3s;
+}
+.sidebar ul li a {
+    color: #1d3557; /* dark blue/gray */
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+.sidebar ul li a:hover {
+    background: #f3f4f6; /* light gray hover effect */
+    transform: translateX(5px);
+}
+
+.sidebar h2 {
+    font-size: 22px;
+    margin-bottom: 30px;
+    text-align: center;
+    background: linear-gradient(45deg, #fbbf24, #fcd34d); /* yellow gradient */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+
+    /* Content */
+.content {
+  margin-left: 200px;
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+    /* Profile Dropdown */
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-dropdown .dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: white;
+  min-width: 220px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  z-index: 10000;
+  border: 1px solid #e0e0e0;
+}
+
+.profile-dropdown .dropdown-content a {
+  display: block;
+  padding: 12px 18px;
+  color: #1d3557;
+  text-decoration: none;
+  font-size: 15px;
+  transition: background 0.3s;
+}
+
+.profile-dropdown .dropdown-content a:hover {
+  background-color: #f1f5f9;
+}
+
+.profile-info {
+  padding: 12px 18px;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.profile-icon {
+  font-size: 24px;
+  color: #1d3557;
+  cursor: pointer;
+}
+
+.dropdown-content {
+    display: none; /* default hidden */
+}
+
+
+   /* Message Panel */
+.message-panel {
+  position: fixed;
+  top: 0;
+  right: -280px;
+  width: 260px;
+  height: 100%;
+  background-color: white;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  transition: right 0.3s ease;
+  z-index: 9999;
+}
+
+.message-panel.show {
+  right: 0;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.message-body {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-link {
+  background-color: #f8f9fa;
+  padding: 12px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: #1d3557;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.message-link:hover {
+  background-color: #e6f0ff;
+}
+
+/* Calendar */
+.mini-calendar {
+  position: absolute;
+  top: 55px;
+  right: 50px;
+  display: none;
+  z-index: 1000;
+}
+
+.calendar-popup {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* Logout Modal */
+#logoutModal {
+  display: none;
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+}
+
+#logoutModal div {
+  background: white;
+  padding: 25px 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 300px;
+  margin: auto;
+}
+
+</style>
+</head>
+<body class="bg-gray-50">
+<!-- Sidebar -->
+<aside class="sidebar sidebar-collapsed">
+    <h2 class="flex items-center justify-center gap-2">
+    <i class="fas fa-graduation-cap"></i> <span class="sidebar-text">Guidance</span>
+</h2>
+    <ul>
+        <li>
+            <a href="dashboard.php" class="nav-item flex items-center px-4 py-3 rounded-lg transition-colors active-nav">
+                   <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Dashboard</span>
+            </a>
+        </li>
+        <?php if (stripos($strand_course, 'SHS') !== false || stripos($year_level, 'Grade') !== false): ?>
+        <li>
+            <a href="student_records.php" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                <i class="fas fa-clipboard-check w-5 h-5 min-w-[20px]"></i>
+                <span class="sidebar-text ml-3 font-medium">Attendance</span>
+            </a>
+        </li>
+        <?php endif; ?>
+        <li>
+    <a href="appointments.php" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" data-section="appointments">
+        <i class="fas fa-calendar-check w-5 h-5 min-w-[20px]"></i>
+        <span class="sidebar-text ml-3 font-medium">Appointments</span>
+    </a>
+</li>
+
+        <li>
+            <a href="student_reports.php" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                 <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="settings.php" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Settings</span>
+            </a>
+        </li>
+    </ul>
+</aside>
+
+<!-- Header -->
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm border-b z-40">
+    <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center space-x-4">
+            <button id="sidebar-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-800">Guidance Portal</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <i class="fas fa-envelope cursor-pointer" onclick="toggleMessagePanel()" title="Inbox"></i>
+            <i class="fas fa-bell cursor-pointer" title="Notifications"></i>
+            <i class="fas fa-calendar-alt cursor-pointer" id="calendarIcon" onclick="toggleCalendar()" title="Calendar"></i>
+            <!-- Profile dropdown -->
+            <div class="relative">
+                <i class="fas fa-user-circle profile-icon cursor-pointer" onclick="toggleProfileDropdown()"></i>
+               <div id="profileDropdown" class="dropdown-content absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 p-2 min-w-[220px] w-auto">
+                    <div class="profile-info p-3 border-b">
+                        <strong><?= htmlspecialchars($fname) ?></strong><br>
+                        <small><?= htmlspecialchars($email) ?></small>
+                    </div>
+                    <a href="profile.php" class="dropdown-item block px-4 py-2 hover:bg-gray-100">👤 View Profile</a>
+                    <a href="#" onclick="showLogoutModal()" class="dropdown-item block px-4 py-2 hover:bg-gray-100">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<main id="main-content" class="main-content-collapsed transition-all duration-300 pt-20 min-h-screen px-6">
+    <!-- Welcome Section -->
+    <div class="gradient-bg rounded-2xl p-8 text-white mb-8">
+        <h2 class="text-3xl font-bold mb-2">Welcome to Your Guidance Portal! 🎓</h2>
+        <p class="text-white/80">Track your academic progress, schedule appointments, and access guidance resources all in one place.</p>
+    </div>
+
+    <!-- Guidance Categories -->
+    <div class="mb-8">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Guidance Categories</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php
+            $categories = [
+                ['icon'=>'📚','title'=>'Academic Guidance','desc'=>'Get help with course selection, study strategies, and academic planning.','btn'=>'Learn More'],
+                ['icon'=>'💼','title'=>'Career Counseling','desc'=>'Explore career paths, internships, and future opportunities.','btn'=>'Explore Careers'],
+                ['icon'=>'🧠','title'=>'Mental Health','desc'=>'Access mental health resources and counseling support.','btn'=>'Get Support'],
+                ['icon'=>'👥','title'=>'Social Skills','desc'=>'Develop communication and interpersonal skills.','btn'=>'Join Programs'],
+                ['icon'=>'🎯','title'=>'Goal Setting','desc'=>'Set and track personal and academic goals.','btn'=>'Set Goals'],
+                ['icon'=>'🏆','title'=>'Achievement','desc'=>'Celebrate milestones and track your progress.','btn'=>'View Progress'],
+            ];
+            foreach($categories as $cat): ?>
+                <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                            <span class="text-2xl"><?= $cat['icon'] ?></span>
+                        </div>
+                        <h4 class="text-xl font-semibold"><?= $cat['title'] ?></h4>
+                    </div>
+                    <p class="text-white/80 mb-4"><?= $cat['desc'] ?></p>
+                    <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"><?= $cat['btn'] ?></button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+     <!-- **Dito mo ilalagay ang appointments section** -->
+    <div class="content">    
+      <h1 class="mb-4">Select Appointment Category</h1>
+
+      <?php
+      include("db.php");
+      $email = $_SESSION['email'];
+      $sql = "SELECT admin_message FROM appointments WHERE email = ? AND admin_message IS NOT NULL ORDER BY id DESC LIMIT 1";
+      $stmt = $con->prepare($sql);
+      $stmt->bind_param("s", $email);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0):
+        $row = $result->fetch_assoc();
+      ?>
+        <div class="admin-message-box">
+          Message from Guidance: <?= htmlspecialchars($row['admin_message']) ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="col-12 text-end">
+         <a href="view_appointments.php" class="btn btn-outline-primary">📋 View Appointments</a>
+      </div>
+
+      <div class="mb-4">
+        <button onclick="showForm('appointment')" class="btn btn-primary me-2">📝 Regular Appointment</button>
+        <a href="special_exam.php" class="btn btn-info text-white">📄 Special Exam Form</a>
+      </div>
+
+      <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>    
+        <div class="success-message" id="successMessage">Appointment successfully submitted!</div>    
+      <?php endif; ?>
+
+      <div id="appointmentForm" style="display:none;">
+        <div class="card shadow-sm p-4">
+          <div class="row">
+            <div class="col-md-8">
+              <form action="add_appointment.php" method="POST" class="row g-3">
+                <div class="col-md-6">
+                  <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($_SESSION['first_name'] . ' ' . ucfirst($_SESSION['lname'])) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($_SESSION['email']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="student_no" class="form-control" value="<?= htmlspecialchars($_SESSION['student_no']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                  <input type="time" name="time" class="form-control" required min="08:00" max="17:00">
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="grade" class="form-control" value="<?= htmlspecialchars($_SESSION['year_level']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="section" class="form-control" value="<?= htmlspecialchars($_SESSION['strand_course']) ?>" readonly>
+                </div>
+
+                <!-- Updated Consultation Category & Interest Dropdown -->
+                <div class="col-md-12">
+                  <label for="mainInterest" class="form-label">Consultation Category</label>
+                  <select id="mainInterest" name="interest" class="form-select" onchange="toggleSubCategory()" required>
+                    <option value="">-- Select Category --</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Behavioral">Behavioral</option>
+                    <option value="Career">Career</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12" id="subInterestDiv" style="display:none;">
+                  <label for="interest" class="form-label">Specific Concern</label>
+                  <select name="specific_concern" id="interest" class="form-select" required>
+                    <option value="">-- Select Concern --</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12">
+                  <textarea name="reason" class="form-control" placeholder="Reason" rows="4" required></textarea>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-success w-100">Add Appointment</button>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-center">
+              <div>
+                <blockquote class="blockquote text-center">
+                  <p class="mb-1" id="quoteText">“Small steps every day lead to big results.”</p>
+                  <footer class="blockquote-footer" id="quoteAuthor">Unknown</footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>  
+        </div>    
+      </div>
+</main>
+
+<!-- Message Panel -->
+<div id="messagePanel" class="message-panel fixed right-0 top-0 h-full w-64 bg-white shadow-lg translate-x-full z-50">
+    <div class="message-header flex justify-between items-center p-4 border-b">
+        <h3 class="font-semibold">📬 Message Center</h3>
+        <button onclick="toggleMessagePanel()">✖</button>
+    </div>
+    <div class="message-body p-4 flex flex-col space-y-2">
+        <a href="inbox.php" class="message-link hover:bg-gray-100 rounded px-2 py-1">📥 Inbox</a>
+        <a href="compose_message.php" class="message-link hover:bg-gray-100 rounded px-2 py-1">📝 Compose</a>
+    </div>
+</div>
+
+ <!-- Calendar -->
+  <div id="mini-calendar" class="mini-calendar">
+    <div class="calendar-popup">
+      <div id="calendarContainer"></div>
+    </div>
+  </div>
+
+<!-- Logout Modal -->
+<div id="logoutModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white p-6 rounded-lg text-center max-w-sm w-full">
+    <p class="text-lg mb-4">Are you sure you want to logout?</p>
+    <div class="flex justify-center gap-3">
+      <button onclick="window.location.href='logout.php'" class="bg-red-600 text-white px-4 py-2 rounded">Yes</button>
+      <button onclick="hideLogoutModal()" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+
+   const successBox = document.getElementById('successMessage');    
+        if (successBox) {    
+          setTimeout(() => {    
+            successBox.classList.add('hide');    
+          }, 5000);    
+        }
+
+        function showForm(type) {
+          if (type === 'appointment') {
+            document.getElementById('appointmentForm').style.display = 'block';
+          }
+        }
+
+        function toggleSubCategory() {
+          const main = document.getElementById("mainInterest").value;
+          const subDiv = document.getElementById("subInterestDiv");
+          const sub = document.getElementById("interest");
+
+          sub.innerHTML = '<option value="">-- Select Concern --</option>';
+          let options = [];
+
+          if (main === "Personal") {
+            options = ["Body Image", "Financial and Money", "Gender Issues", "Goal Setting", "Pregnancy", "Religioud and Spirit", "Self-Confidence", "Self-Esteem", "Study Habit", "Time Management", "Lack of Interest", "Lost of Motivation", "Eating Concern", "Sleep Pattern Concern", "Legal Concerns"];
+          } else if (main === "Academic") {
+            options = ["Attendance", "Learning Disability", "Grades Thesis", "Adjustment", "Compiliance to School", "Perfectiionism", "Repeating year level", "Underachievment"];
+          } else if (main === "Behavioral") {
+            options = ["Disciplinary", "Handbook", "School Process"];
+          } else if (main === "Career") {
+            options = ["Career Shift", "Decision Making", "School Transfer", "Work", "Career Planning"];
+          }
+
+          options.forEach(function(opt) {
+            const o = document.createElement("option");
+            o.value = opt;
+            o.text = opt;
+            sub.appendChild(o);
+          });
+
+          subDiv.style.display = (options.length > 0) ? "block" : "none";
+        }
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const mainContent = document.getElementById('main-content');
+    const sidebar = document.querySelector('.sidebar');
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('sidebar-collapsed');
+        sidebar.classList.toggle('sidebar-expanded');
+        mainContent.classList.toggle('main-content-collapsed');
+        mainContent.classList.toggle('main-content-expanded');
+    });
+  
+    function toggleMessagePanel() {
+      const panel = document.getElementById("messagePanel");
+      panel.classList.toggle("show");
+    }
+
+    function toggleCalendar() {
+  const cal = document.getElementById("mini-calendar");
+  cal.style.display = (cal.style.display === "block") ? "none" : "block";
+}
+
+document.addEventListener("click", function (event) {
+  const calendar = document.getElementById("mini-calendar");
+  const icon = document.getElementById("calendarIcon");
+
+  if (!calendar.contains(event.target) && !icon.contains(event.target)) {
+    calendar.style.display = "none";
+  }
+});
+
+    function toggleProfileDropdown() {
+      const dropdown = document.getElementById("profileDropdown");
+      dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+
+    document.addEventListener("click", function(e) {
+      const dropdown = document.getElementById("profileDropdown");
+      const icon = document.querySelector(".profile-icon");
+      if (!dropdown.contains(e.target) && !icon.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+
+    flatpickr("#calendarContainer", {
+      inline: true,
+      defaultDate: "today"
+    });
+
+    function showLogoutModal() {
+      document.getElementById("logoutModal").style.display = "flex";
+    }
+
+    function hideLogoutModal() {
+      document.getElementById("logoutModal").style.display = "none";
+    }
+
+     document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault(); // para hindi mag-reload
+
+    const section = this.getAttribute('data-section');
+    const container = document.getElementById('appointments-section');
+
+    if(section === 'appointments') {
+        fetch('appointments_partial.php')
+    .then(res => res.text())
+    .then(html => {
+        const container = document.getElementById("appointments-section");
+        container.innerHTML = html;
+        container.classList.remove("hidden");
+    });
+
+
+            // Optional: hide other sections if meron
+            document.querySelectorAll('.section').forEach(sec => {
+                if(sec.id !== 'appointments-section') sec.classList.add('hidden');
+            });
+        });
+    }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const container = document.getElementById("appointments-section");
+    fetch('appointments_partial.php')
+        .then(res => res.text())
+        .then(html => {
+            container.innerHTML = html;
+            container.classList.remove("hidden");
+        });
+});
+
+
+  </script>
+</body>
+</html>

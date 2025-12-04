@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exit Interview Management - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+        
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 250px;
+            background-color: #fff;
+            border-right: 1px solid #dee2e6;
+            padding: 1.5rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar h2 {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: #6c757d;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar a:hover {
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+        
+        .sidebar a.active {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-right: 3px solid #1976d2;
+        }
+        
+        .sidebar a i {
+            font-size: 1.1rem;
+            width: 18px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
+            width: calc(100% - 250px);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-for-scheduling {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-scheduled {
+            background-color: #cce5ff;
+            color: #0066cc;
+        }
+
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .table th:hover {
+            background-color: #e9ecef;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .table tbody tr:hover {
+            background-color: #e3f2fd;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .notes-cell {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        .highlight-pending {
+            border-left: 4px solid #ffc107;
+        }
+
+        .modal-body .form-label {
+            font-weight: 600;
+        }
+
+        .sort-icon {
+            margin-left: 0.5rem;
+            opacity: 0.5;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <h2><i class="bi bi-mortarboard-fill me-2"></i>Admin Panel</h2>
+            <ul>
+                <li><a href="admin_dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                <li><a href="admin_records.php"><i class="bi bi-people"></i> Student Records</a></li>
+                <li><a href="admin_appointments.php"><i class="bi bi-calendar-check"></i> Appointments</a></li>
+                <li><a href="admin_reports.php"><i class="bi bi-graph-up"></i> Reports</a></li>
+                <li><a href="admin_settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+                <li><a href="admin_announcements.php"><i class="bi bi-megaphone"></i> Announcements</a></li>
+                <li><a href="admin_parents.php"><i class="bi bi-person-lines-fill"></i> Parent Accounts</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Exit Interview Management</h1>
+                    <p class="text-muted mb-0">Process and manage student exit interview requests</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportData()">
+                        <i class="bi bi-download me-1"></i>Export
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-number text-warning" id="pendingCount">8</div>
+                    <div class="stat-label">For Scheduling</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number text-primary" id="scheduledCount">12</div>
+                    <div class="stat-label">Scheduled</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number text-success" id="completedCount">25</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number text-info" id="totalCount">45</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-section">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Search</label>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search by name, student no, or email">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="For Scheduling">For Scheduling</option>
+                            <option value="Scheduled">Scheduled</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Grade</label>
+                        <select class="form-select" id="gradeFilter">
+                            <option value="">All Grades</option>
+                            <option value="Grade 11">Grade 11</option>
+                            <option value="Grade 12">Grade 12</option>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Reason</label>
+                        <select class="form-select" id="reasonFilter">
+                            <option value="">All Reasons</option>
+                            <option value="Graduation">Graduation</option>
+                            <option value="School Transfer">School Transfer</option>
+                            <option value="Dropping Out">Dropping Out</option>
+                            <option value="Clearance">Clearance</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date Range</label>
+                        <div class="d-flex gap-1">
+                            <input type="date" class="form-control" id="dateFrom" placeholder="From">
+                            <input type="date" class="form-control" id="dateTo" placeholder="To">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="exitInterviewTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable(0)">ID <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(1)">Student No <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(2)">Full Name <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(3)">Email <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(4)">Grade <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(5)">Section <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(6)">Reason <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(7)">Preferred Date <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(8)">Scheduled Date <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th onclick="sortTable(9)">Status <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th>Notes</th>
+                                <th onclick="sortTable(11)">Created At <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Sample data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of <span id="totalRecords">45</span> entries
+                </div>
+                <nav>
+                    <ul class="pagination mb-0" id="pagination">
+                        <!-- Pagination will be generated here -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- View/Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Exit Interview Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Student Number</label>
+                                <input type="text" class="form-control" id="editStudentNo" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="editFullName" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Grade</label>
+                                <input type="text" class="form-control" id="editGrade" readonly>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Section</label>
+                                <input type="text" class="form-control" id="editSection" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reason</label>
+                                <input type="text" class="form-control" id="editReason" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Preferred Date</label>
+                                <input type="date" class="form-control" id="editPreferredDate" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Scheduled Date *</label>
+                                <input type="date" class="form-control" id="editScheduledDate">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status *</label>
+                                <select class="form-select" id="editStatus">
+                                    <option value="For Scheduling">For Scheduling</option>
+                                    <option value="Scheduled">Scheduled</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" id="editNotes" rows="3" placeholder="Add notes about this exit interview..."></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveChanges()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Modal -->
+    <div class="modal fade" id="notesModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Notes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="notesContent"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Date Modal -->
+    <div class="modal fade" id="scheduleDateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Interview Date *</label>
+                        <input type="date" class="form-control" id="scheduleDate" required>
+                        <div class="form-text">Choose a date for the exit interview</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Select Time Slot *</label>
+                        <select class="form-select" id="scheduleTime" required>
+                            <option value="">Select Time</option>
+                            <option value="08:00 AM">08:00 AM - 09:00 AM</option>
+                            <option value="09:00 AM">09:00 AM - 10:00 AM</option>
+                            <option value="10:00 AM">10:00 AM - 11:00 AM</option>
+                            <option value="11:00 AM">11:00 AM - 12:00 PM</option>
+                            <option value="01:00 PM">01:00 PM - 02:00 PM</option>
+                            <option value="02:00 PM">02:00 PM - 03:00 PM</option>
+                            <option value="03:00 PM">03:00 PM - 04:00 PM</option>
+                            <option value="04:00 PM">04:00 PM - 05:00 PM</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSchedule()">Schedule Interview</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Confirmation Modal -->
+    <div class="modal fade" id="completionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Mark as Completed</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Are you sure you want to mark this exit interview as completed?
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Completion Notes (Optional)</label>
+                        <textarea class="form-control" id="completionNotes" rows="3" placeholder="Add any final notes about the completed interview..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="confirmCompletion()">Mark as Completed</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Notification Modal -->
+    <div class="modal fade" id="notificationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Send Notification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Notification Type *</label>
+                        <select class="form-select" id="notificationType" onchange="updateNotificationTemplate()">
+                            <option value="">Select notification type</option>
+                            <option value="approved">Interview Approved</option>
+                            <option value="scheduled">Interview Scheduled</option>
+                            <option value="rescheduled">Interview Rescheduled</option>
+                            <option value="completed">Interview Completed</option>
+                            <option value="custom">Custom Message</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message *</label>
+                        <textarea class="form-control" id="notificationMessage" rows="5" placeholder="Enter your message to the student..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="sendEmail" checked>
+                        <label class="form-check-label" for="sendEmail">
+                            Send via Email
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSendNotification()">Send Notification</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+       let sampleData = [];
+let currentData = [];
+let currentPage = 1;
+const itemsPerPage = 10;
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadExitInterviewData();
+});
+
+function loadExitInterviewData() {
+    fetch("fetch_exit_interviews.php")
+        .then(response => response.json())
+        .then(data => {
+            sampleData = data.map((row) => ({
+                id: parseInt(row.id),
+                studentNo: row.student_no,
+                fullName: row.full_name,
+                email: row.email,
+                grade: row.year_level,
+                section: row.strand_course,
+                reason: row.reason,
+                preferredDate: row.preferred_date || '',
+                scheduledDate: row.scheduled_date || '',
+                status: row.status, // keep lowercase
+                notes: row.notes || '',
+                createdAt: row.created_at
+            }));
+
+            currentData = [...sampleData];
+
+            setupEventListeners(); // move here
+            renderTable();
+            updateStats();
+        })
+        .catch(error => console.error("Error loading data:", error));
+}
+
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTable();
+            setupEventListeners();
+            updateStats();
+        });
+
+        function setupEventListeners() {
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', filterData);
+            document.getElementById('statusFilter').addEventListener('change', filterData);
+            document.getElementById('gradeFilter').addEventListener('change', filterData);
+            document.getElementById('reasonFilter').addEventListener('change', filterData);
+            document.getElementById('dateFrom').addEventListener('change', filterData);
+            document.getElementById('dateTo').addEventListener('change', filterData);
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = currentData.slice(startIndex, endIndex);
+
+            tbody.innerHTML = '';
+
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+                if (row.status === 'For Scheduling') {
+                    tr.classList.add('highlight-pending');
+                }
+
+                tr.innerHTML = `
+                    <td>${row.id}</td>
+                    <td>${row.studentNo}</td>
+                    <td>${row.fullName}</td>
+                    <td>${row.email}</td>
+                    <td>${row.grade}</td>
+                    <td>${row.section}</td>
+                    <td>${row.reason}</td>
+                    <td>${row.preferredDate || '-'}</td>
+                    <td>${row.scheduledDate || '-'}</td>
+                    <td><span class="status-badge status-${row.status.toLowerCase().replace(' ', '-')}">${row.status}</span></td>
+                    <td class="notes-cell" onclick="showNotes('${row.notes}')" title="${row.notes}">${row.notes || '-'}</td>
+                    <td>${formatDateTime(row.createdAt)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-outline-primary btn-sm" onclick="viewRecord(${row.id})" title="View/Edit">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="scheduleInterview(${row.id})" title="Schedule">
+                                <i class="bi bi-calendar-plus"></i>
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="markCompleted(${row.id})" title="Mark Complete">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="sendNotification(${row.id})" title="Send Notification">
+                                <i class="bi bi-envelope"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updatePagination();
+            updateShowingInfo();
+        }
+
+        function filterData() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const gradeFilter = document.getElementById('gradeFilter').value;
+            const reasonFilter = document.getElementById('reasonFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+
+            currentData = sampleData.filter(row => {
+                const matchesSearch = !search || 
+                    row.fullName.toLowerCase().includes(search) ||
+                    row.studentNo.toLowerCase().includes(search) ||
+                    row.email.toLowerCase().includes(search);
+
+                const matchesStatus = !statusFilter || row.status === statusFilter;
+                const matchesGrade = !gradeFilter || row.grade === gradeFilter;
+                const matchesReason = !reasonFilter || row.reason === reasonFilter;
+
+                let matchesDate = true;
+                if (dateFrom || dateTo) {
+                    const createdDate = new Date(row.createdAt).toISOString().split('T')[0];
+                    if (dateFrom && createdDate < dateFrom) matchesDate = false;
+                    if (dateTo && createdDate > dateTo) matchesDate = false;
+                }
+
+                return matchesSearch && matchesStatus && matchesGrade && matchesReason && matchesDate;
+            });
+
+            currentPage = 1;
+            renderTable();
+            updateStats();
+        }
+
+        function sortTable(columnIndex) {
+            const columns = ['id', 'studentNo', 'fullName', 'email', 'grade', 'section', 'reason', 'preferredDate', 'scheduledDate', 'status', 'notes', 'createdAt'];
+            const column = columns[columnIndex];
+
+            if (sortColumn === columnIndex) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = columnIndex;
+                sortDirection = 'asc';
+            }
+
+            currentData.sort((a, b) => {
+                let aVal = a[column] || '';
+                let bVal = b[column] || '';
+
+                if (column === 'id') {
+                    aVal = parseInt(aVal);
+                    bVal = parseInt(bVal);
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Update sort icons
+            document.querySelectorAll('.sort-icon').forEach(icon => icon.classList.remove('active'));
+            document.querySelectorAll('.sort-icon')[columnIndex].classList.add('active');
+
+            renderTable();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(currentData.length / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Previous button
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>`;
+            pagination.appendChild(prevLi);
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const li = document.createElement('li');
+                    li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+                    pagination.appendChild(li);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<span class="page-link">...</span>';
+                    pagination.appendChild(li);
+                }
+            }
+
+            // Next button
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>`;
+            pagination.appendChild(nextLi);
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(currentData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderTable();
+            }
+        }
+
+        function updateShowingInfo() {
+            const startIndex = (currentPage - 1) * itemsPerPage + 1;
+            const endIndex = Math.min(currentPage * itemsPerPage, currentData.length);
+            
+            document.getElementById('showingStart').textContent = startIndex;
+            document.getElementById('showingEnd').textContent = endIndex;
+            document.getElementById('totalRecords').textContent = currentData.length;
+        }
+
+        function updateStats() {
+    const pending = currentData.filter(row => row.status.toLowerCase() === 'pending').length;
+    const scheduled = currentData.filter(row => row.status.toLowerCase() === 'approved').length;
+    const completed = currentData.filter(row => row.status.toLowerCase() === 'completed').length;
+    const total = currentData.length;
+
+    document.getElementById('pendingCount').textContent = pending;
+    document.getElementById('scheduledCount').textContent = scheduled;
+    document.getElementById('completedCount').textContent = completed;
+    document.getElementById('totalCount').textContent = total;
+}
+
+        function viewRecord(id) {
+            const record = sampleData.find(r => r.id === id);
+            if (!record) return;
+
+            // Populate modal fields
+            document.getElementById('editStudentNo').value = record.studentNo;
+            document.getElementById('editFullName').value = record.fullName;
+            document.getElementById('editEmail').value = record.email;
+            document.getElementById('editGrade').value = record.grade;
+            document.getElementById('editSection').value = record.section;
+            document.getElementById('editReason').value = record.reason;
+            document.getElementById('editPreferredDate').value = record.preferredDate;
+            document.getElementById('editScheduledDate').value = record.scheduledDate;
+            document.getElementById('editStatus').value = record.status;
+            document.getElementById('editNotes').value = record.notes;
+
+            // Store current record ID
+            document.getElementById('editForm').dataset.recordId = id;
+
+            // Show modal
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        function saveChanges() {
+            const recordId = parseInt(document.getElementById('editForm').dataset.recordId);
+            const record = sampleData.find(r => r.id === recordId);
+            
+            if (!record) return;
+
+            // Update record
+            record.scheduledDate = document.getElementById('editScheduledDate').value;
+            record.status = document.getElementById('editStatus').value;
+            record.notes = document.getElementById('editNotes').value;
+
+            // Update current data if it includes this record
+            const currentRecord = currentData.find(r => r.id === recordId);
+            if (currentRecord) {
+                currentRecord.scheduledDate = record.scheduledDate;
+                currentRecord.status = record.status;
+                currentRecord.notes = record.notes;
+            }
+
+            // Close modal and refresh table
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            renderTable();
+            updateStats();
+
+            // Show success message
+            showNotification('Exit interview record updated successfully!', 'success');
+        }
+
+        function scheduleInterview(id) {
+            const record = sampleData.find(r => r.id === id);
+            if (!record) return;
+
+            // Set minimum date to today
+            const today = new Date();
+            document.getElementById('scheduleDate').min = today.toISOString().split('T')[0];
+            document.getElementById('scheduleDate').value = today.toISOString().split('T')[0];
+            document.getElementById('scheduleTime').value = '';
+
+            // Store the record ID for later use
+            document.getElementById('scheduleDateModal').dataset.recordId = id;
+
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('scheduleDateModal')).show();
+        }
+
+        function confirmSchedule() {
+            const recordId = parseInt(document.getElementById('scheduleDateModal').dataset.recordId);
+            const scheduledDate = document.getElementById('scheduleDate').value;
+            const scheduledTime = document.getElementById('scheduleTime').value;
+
+            if (!scheduledDate || !scheduledTime) {
+                showNotification('Please select both date and time!', 'danger');
+                return;
+            }
+
+            const record = sampleData.find(r => r.id === recordId);
+            if (!record) return;
+
+            record.scheduledDate = scheduledDate;
+            record.status = 'Scheduled';
+            record.notes = record.notes ? record.notes + ` | Scheduled for ${scheduledTime}` : `Scheduled for ${scheduledTime}`;
+            
+            const currentRecord = currentData.find(r => r.id === recordId);
+            if (currentRecord) {
+                currentRecord.scheduledDate = scheduledDate;
+                currentRecord.status = 'Scheduled';
+                currentRecord.notes = record.notes;
+            }
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('scheduleDateModal')).hide();
+            
+            renderTable();
+            updateStats();
+            showNotification('Interview scheduled successfully!', 'success');
+        }
+
+        function markCompleted(id) {
+            const record = sampleData.find(r => r.id === id);
+            if (!record) return;
+
+            // Store the record ID and clear previous notes
+            document.getElementById('completionModal').dataset.recordId = id;
+            document.getElementById('completionNotes').value = '';
+
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('completionModal')).show();
+        }
+
+        function confirmCompletion() {
+            const recordId = parseInt(document.getElementById('completionModal').dataset.recordId);
+            const completionNotes = document.getElementById('completionNotes').value;
+
+            const record = sampleData.find(r => r.id === recordId);
+            if (!record) return;
+
+            record.status = 'Completed';
+            if (completionNotes) {
+                record.notes = record.notes ? record.notes + ` | Completion: ${completionNotes}` : `Completion: ${completionNotes}`;
+            }
+            
+            const currentRecord = currentData.find(r => r.id === recordId);
+            if (currentRecord) {
+                currentRecord.status = 'Completed';
+                currentRecord.notes = record.notes;
+            }
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('completionModal')).hide();
+            
+            renderTable();
+            updateStats();
+            showNotification('Exit interview marked as completed!', 'success');
+        }
+
+        function showNotes(notes) {
+            if (!notes) return;
+            
+            document.getElementById('notesContent').textContent = notes;
+            new bootstrap.Modal(document.getElementById('notesModal')).show();
+        }
+
+        function exportData() {
+            // Create CSV content
+            const headers = ['ID', 'Student No', 'Full Name', 'Email', 'Grade', 'Section', 'Reason', 'Preferred Date', 'Scheduled Date', 'Status', 'Notes', 'Created At'];
+            const csvContent = [
+                headers.join(','),
+                ...currentData.map(row => [
+                    row.id,
+                    row.studentNo,
+                    `"${row.fullName}"`,
+                    row.email,
+                    row.grade,
+                    row.section,
+                    row.reason,
+                    row.preferredDate,
+                    row.scheduledDate,
+                    row.status,
+                    `"${row.notes}"`,
+                    row.createdAt
+                ].join(','))
+            ].join('\n');
+
+            // Download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exit_interviews.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            showNotification('Data exported successfully!', 'success');
+        }
+
+        function refreshData() {
+            // Simulate data refresh
+            currentData = [...sampleData];
+            currentPage = 1;
+            renderTable();
+            updateStats();
+            showNotification('Data refreshed successfully!', 'success');
+        }
+
+        function formatDateTime(dateTime) {
+            const date = new Date(dateTime);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function sendNotification(id) {
+            const record = sampleData.find(r => r.id === id);
+            if (!record) return;
+
+            // Store the record ID and reset form
+            document.getElementById('notificationModal').dataset.recordId = id;
+            document.getElementById('notificationType').value = '';
+            document.getElementById('notificationMessage').value = '';
+            document.getElementById('sendEmail').checked = true;
+
+            // Show the modal
+            new bootstrap.Modal(document.getElementById('notificationModal')).show();
+        }
+
+        function updateNotificationTemplate() {
+            const type = document.getElementById('notificationType').value;
+            const recordId = parseInt(document.getElementById('notificationModal').dataset.recordId);
+            const record = sampleData.find(r => r.id === recordId);
+            
+            if (!record) return;
+
+            let template = '';
+            switch(type) {
+                case 'approved':
+                    template = `Dear ${record.fullName},\n\nYour exit interview request has been approved. We will contact you soon to schedule the interview.\n\nBest regards,\nGuidance Office`;
+                    break;
+                case 'scheduled':
+                    template = `Dear ${record.fullName},\n\nYour exit interview has been scheduled for ${record.scheduledDate || '[DATE]'}. Please be present at the Guidance Office at the scheduled time.\n\nBest regards,\nGuidance Office`;
+                    break;
+                case 'rescheduled':
+                    template = `Dear ${record.fullName},\n\nYour exit interview has been rescheduled to ${record.scheduledDate || '[NEW DATE]'}. Please note the new schedule.\n\nBest regards,\nGuidance Office`;
+                    break;
+                case 'completed':
+                    template = `Dear ${record.fullName},\n\nThank you for completing your exit interview. Your feedback is valuable to us. If you need any additional assistance, please don't hesitate to contact us.\n\nBest regards,\nGuidance Office`;
+                    break;
+                case 'custom':
+                    template = `Dear ${record.fullName},\n\n[Your message here]\n\nBest regards,\nGuidance Office`;
+                    break;
+            }
+
+            document.getElementById('notificationMessage').value = template;
+        }
+
+        function confirmSendNotification() {
+            const recordId = parseInt(document.getElementById('notificationModal').dataset.recordId);
+            const notificationType = document.getElementById('notificationType').value;
+            const message = document.getElementById('notificationMessage').value;
+            const sendEmail = document.getElementById('sendEmail').checked;
+
+            if (!notificationType || !message) {
+                showNotification('Please select notification type and enter a message!', 'danger');
+                return;
+            }
+
+            const record = sampleData.find(r => r.id === recordId);
+            if (!record) return;
+
+            // Simulate sending notification
+            const method = sendEmail ? 'email' : 'system notification';
+            
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+            
+            showNotification(`Notification sent successfully to ${record.fullName} via ${method}!`, 'success');
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'990f4b0737b50dc9',t:'MTc2MDg2NjYwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

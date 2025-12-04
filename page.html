@@ -1,0 +1,1181 @@
+<?php
+session_start();
+include("db.php");
+
+if (!isset($_SESSION['email'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$email = $_SESSION['email'];
+
+// ✅ Default values (para hindi undefined)
+$successMsg = "";
+$errorMsg   = "";
+
+// Update display name
+if (isset($_POST['newName'])) {
+    $newName = trim($_POST['newName']);
+    if (!empty($newName)) {
+        $nameParts = explode(" ", $newName);
+        $fname = $nameParts[0];
+        $lname = isset($nameParts[1]) ? $nameParts[1] : "";
+
+        $stmt = $con->prepare("UPDATE form SET fname = ?, lname = ? WHERE email = ?");
+        $stmt->bind_param("sss", $fname, $lname, $email);
+        if ($stmt->execute()) {
+            $successMsg = "Display name updated successfully.";
+        } else {
+            $errorMsg = "Failed to update name.";
+        }
+    }
+}
+
+// Change password with validation
+if (isset($_POST['currentPass'], $_POST['newPass'], $_POST['confirmPass'])) {
+    $currentPass = $_POST['currentPass'];
+    $newPass = $_POST['newPass'];
+    $confirmPass = $_POST['confirmPass'];
+
+    $result = $con->prepare("SELECT pass, password_changed_at FROM form WHERE email = ?");
+    $result->bind_param("s", $email);
+    $result->execute();
+    $result->store_result();
+    $result->bind_result($storedPass, $lastChangedAt);
+
+    if ($result->num_rows > 0 && $result->fetch()) {
+        $now = new DateTime();
+        $lastChangeDate = $lastChangedAt ? new DateTime($lastChangedAt) : null;
+
+        if ($lastChangeDate && $now->diff($lastChangeDate)->days < 10) {
+            $errorMsg = "You can only change your password again after 10 days.";
+        } elseif (!password_verify($currentPass, $storedPass)) {
+            $errorMsg = "Current password is incorrect.";
+        } elseif ($newPass !== $confirmPass) {
+            $errorMsg = "New password and confirm password do not match.";
+        } elseif (strlen($newPass) < 8) {
+            $errorMsg = "Password must be at least 8 characters.";
+        } else {
+            $hashedPass = password_hash($newPass, PASSWORD_DEFAULT);
+            $update = $con->prepare("UPDATE form SET pass = ?, password_changed_at = NOW() WHERE email = ?");
+            $update->bind_param("ss", $hashedPass, $email);
+            if ($update->execute()) {
+                $successMsg = "Password changed successfully.";
+            } else {
+                $errorMsg = "Failed to change password.";
+            }
+        }
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['appointmentForm'])) {
+    $name       = $_POST['name'];
+    $emailForm  = $_POST['email'];
+    $student_no = $_POST['student_no'];
+    $date       = $_POST['date'];
+    $time       = $_POST['time'];
+    $grade      = $_POST['grade'];
+    $section    = $_POST['section'];
+    $interest   = $_POST['interest'];
+    $reason     = $_POST['reason'];
+
+    // Validate time
+    if ($time < "08:00" || $time > "17:00") {
+        $errorMsg = "Error: Appointments are only allowed from 8:00 AM to 5:00 PM.";
+    } elseif ($time >= "12:00" && $time < "13:00") {
+        $errorMsg = "Error: Appointments are not allowed during lunch break (12:00 PM – 1:00 PM).";
+    } else {
+        $stmt = $con->prepare("INSERT INTO appointments 
+            (name, email, student_no, date, time, grade, section, interest, reason) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssssss", $name, $emailForm, $student_no, $date, $time, $grade, $section, $interest, $reason);
+        if ($stmt->execute()) {
+            $successMsg = "Appointment successfully submitted!";
+        } else {
+            $errorMsg = "Something went wrong. Please try again.";
+        }
+    }
+}
+
+// Fetch user info from database
+$stmt = $con->prepare("SELECT fname, strand_course, year_level FROM form WHERE email = ?");
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+
+$fname = $user['fname'];
+$strand_course = isset($user['strand_course']) ? $user['strand_course'] : "";
+$year_level = isset($user['year_level']) ? $user['year_level'] : "";
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guidance Portal - Student Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .sidebar-collapsed {
+            width: 80px;
+        }
+        
+        .sidebar-expanded {
+            width: 280px;
+        }
+        
+        .main-content-expanded {
+            margin-left: 280px;
+        }
+        
+        .main-content-collapsed {
+            margin-left: 80px;
+        }
+        
+        .sidebar-text {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar-collapsed .sidebar-text {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .category-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:nth-child(2) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .category-card:nth-child(3) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .category-card:nth-child(4) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .category-card:nth-child(5) {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+        
+        .category-card:nth-child(6) {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .active-nav {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .notification-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+         .success-message {
+      position: fixed;    
+      bottom: 20px;    
+      right: 20px;    
+      background-color: #d4edda;    
+      color: #155724;    
+      padding: 12px 18px;    
+      border: 1px solid #c3e6cb;    
+      border-radius: 8px;    
+      font-weight: bold;    
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);    
+      z-index: 9999;    
+      opacity: 1;    
+      transition: opacity 0.5s ease-in-out;    
+    }  
+    .success-message.hide {    
+      opacity: 0;    
+      visibility: hidden;    
+    }
+
+    form button {    
+      background-color: #1d3557;    
+      color: white;    
+      border: none;    
+      cursor: pointer;    
+    }    
+
+    form button:hover {    
+      background-color: #16324f;    
+    }    
+
+    form {    
+      max-width: 600px;    
+    }    
+
+    .nav-links {    
+      margin-bottom: 20px;    
+    }    
+
+    .nav-links a {    
+      margin-right: 20px;    
+      font-size: 14px;    
+      color: #1d3557;    
+      text-decoration: underline;    
+    }    
+
+    .nav-links a:hover {    
+      text-decoration: none;    
+    }
+
+    .admin-message-box {
+      background-color: #e1ecf4;
+      color: #0b5394;
+      padding: 12px 16px;
+      border: 1px solid #a4d3f0;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+
+
+        /* Profile Dropdown */
+.profile-dropdown {
+  position: relative;
+}
+
+.profile-dropdown .dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: white;
+  min-width: 220px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  z-index: 10000;
+  border: 1px solid #e0e0e0;
+}
+
+.profile-dropdown .dropdown-content a {
+  display: block;
+  padding: 12px 18px;
+  color: #1d3557;
+  text-decoration: none;
+  font-size: 15px;
+  transition: background 0.3s;
+}
+
+.profile-dropdown .dropdown-content a:hover {
+  background-color: #f1f5f9;
+}
+
+.profile-info {
+  padding: 12px 18px;
+  border-bottom: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.profile-icon {
+  font-size: 24px;
+  color: #1d3557;
+  cursor: pointer;
+}
+
+
+
+    .dropdown-content {
+    display: none; /* default hidden */
+}
+
+
+   /* Message Panel */
+.message-panel {
+  position: fixed;
+  top: 0;
+  right: -280px;
+  width: 260px;
+  height: 100%;
+  background-color: white;
+  box-shadow: -3px 0 10px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  transition: right 0.3s ease;
+  z-index: 9999;
+}
+
+.message-panel.show {
+  right: 0;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 10px;
+}
+
+.message-body {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-link {
+  background-color: #f8f9fa;
+  padding: 12px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: #1d3557;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.message-link:hover {
+  background-color: #e6f0ff;
+}
+
+/* Calendar */
+.mini-calendar {
+  position: absolute;
+  top: 55px;
+  right: 50px;
+  display: none;
+  z-index: 1000;
+}
+
+.calendar-popup {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.15);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+/* Logout Modal */
+#logoutModal {
+  display: none;
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+}
+
+#logoutModal div {
+  background: white;
+  padding: 25px 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 300px;
+  margin: auto;
+}
+
+ .card {
+      border-radius: 12px;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+    }
+
+    .card a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .content { margin-left: 200px; padding: 40px; min-height: 100vh; }
+h1 { color: #1d3557; margin-bottom: 20px; }
+.tab-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab-buttons button { padding: 10px 20px; background-color: #1d3557; color: white; border: none; cursor: pointer; border-radius: 6px; }
+.tab-buttons button.active { background-color: #457b9d; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+form input { width: 100%; padding: 8px 10px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+form input[type="submit"] { width: auto; background-color: #1d3557; color: white; cursor: pointer; transition: 0.3s; }
+form input[type="submit"]:hover { background-color: #457b9d; }
+.password-wrapper { position: relative; margin-bottom: 15px; }
+.toggle-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; opacity: 0.7; }
+.success-message { color: green; }
+.error-message { color: red; }
+.security-note { font-size: 14px; color: #555; margin-bottom: 15px; }
+
+    </style>
+</head>
+<body class="bg-gray-50">
+<<!-- Header -->
+<header class="fixed top-0 left-0 right-0 bg-white shadow-sm border-b z-40">
+    <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center space-x-4">
+            <button id="sidebar-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-800">Guidance Portal</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <i class="fas fa-envelope cursor-pointer" onclick="toggleMessagePanel()" title="Inbox"></i>
+            <i class="fas fa-bell cursor-pointer" title="Notifications"></i>
+            <i class="fas fa-calendar-alt cursor-pointer" id="calendarIcon" onclick="toggleCalendar()" title="Calendar"></i>
+            <!-- Profile dropdown -->
+            <div class="relative">
+                <i class="fas fa-user-circle profile-icon cursor-pointer" onclick="toggleProfileDropdown()"></i>
+               <div id="profileDropdown" class="dropdown-content absolute right-0 mt-2 bg-white border rounded-lg shadow-lg z-50 p-2 min-w-[220px] w-auto">
+                    <div class="profile-info p-3 border-b">
+                        <strong><?= htmlspecialchars($fname) ?></strong><br>
+                        <small><?= htmlspecialchars($email) ?></small>
+                    </div>
+                    <a href="profile.php" class="dropdown-item block px-4 py-2 hover:bg-gray-100">👤 View Profile</a>
+                    <a href="#" onclick="showLogoutModal()" class="dropdown-item block px-4 py-2 hover:bg-gray-100">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+   
+ <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-16 h-full bg-white shadow-lg sidebar-expanded transition-all duration-300 z-30">
+        <nav class="p-4">
+            <ul class="space-y-2">
+                <li>
+                    <a href="#" class="nav-item active-nav flex items-center px-4 py-3 rounded-lg transition-colors" data-section="dashboard">
+                        <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" data-section="appointments">
+                        <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Appointments</span>
+                        <span class="sidebar-text ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">2</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" data-section="records">
+                        <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Records</span>
+                    </a>
+                </li>
+                <li>
+
+                    <?php if (stripos($strand_course, 'SHS') !== false || stripos($year_level, 'Grade') !== false): ?>
+<li>
+    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" data-section="reports">
+        <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+        <span class="sidebar-text ml-3 font-medium">Attendance</span>
+    </a>
+</li>
+<?php endif; ?>
+
+                <li>
+                    <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" data-section="settings">
+                        <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="sidebar-text ml-3 font-medium">Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content-expanded transition-all duration-300 pt-20 min-h-screen">
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="content-section p-6 animate-fade-in">
+            <!-- Welcome Banner -->
+            <div class="gradient-bg rounded-2xl p-8 text-white mb-8">
+                <h2 class="text-3xl font-bold mb-2">Welcome, <?= htmlspecialchars($fname); ?>🎓</h2>
+                <p class="text-white/80">Track your academic progress, schedule appointments, and access guidance resources all in one place.</p>
+            </div>
+
+            <!-- Guidance Categories -->
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">Guidance Categories</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">📚</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Academic Guidance</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Get help with course selection, study strategies, and academic planning.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            Learn More
+                        </button>
+                    </div>
+
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">💼</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Career Counseling</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Explore career paths, internships, and future opportunities.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            Explore Careers
+                        </button>
+                    </div>
+
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">🧠</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Mental Health</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Access mental health resources and counseling support.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            Get Support
+                        </button>
+                    </div>
+
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">👥</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Social Skills</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Develop communication and interpersonal skills.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            Join Programs
+                        </button>
+                    </div>
+
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">🎯</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Goal Setting</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Set and track personal and academic goals.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            Set Goals
+                        </button>
+                    </div>
+
+                    <div class="category-card rounded-2xl p-6 text-white card-hover cursor-pointer">
+                        <div class="flex items-center mb-4">
+                            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-2xl">🏆</span>
+                            </div>
+                            <h4 class="text-xl font-semibold">Achievement</h4>
+                        </div>
+                        <p class="text-white/80 mb-4">Celebrate milestones and track your progress.</p>
+                        <button class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors">
+                            View Progress
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="grid lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Recent Activities</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Career Counseling Session</p>
+                                <p class="text-sm text-gray-500">Completed 2 days ago</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Goal Achievement</p>
+                                <p class="text-sm text-gray-500">Reached study target</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Progress Report</p>
+                                <p class="text-sm text-gray-500">Monthly report generated</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                            <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Book Appointment</span>
+                        </button>
+                        
+                        <button class="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                            <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">View Reports</span>
+                        </button>
+                        
+                        <button class="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                            <svg class="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Contact Counselor</span>
+                        </button>
+                        
+                        <button class="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                            <svg class="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-700">Resources</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointments Section -->
+        <div id="appointments-section" class="content-section p-6 hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Appointments</h2>
+            
+             <h1 class="mb-4">Select Appointment Category</h1>
+
+      <?php
+      include("db.php");
+      $email = $_SESSION['email'];
+      $sql = "SELECT admin_message FROM appointments WHERE email = ? AND admin_message IS NOT NULL ORDER BY id DESC LIMIT 1";
+      $stmt = $con->prepare($sql);
+      $stmt->bind_param("s", $email);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0):
+        $row = $result->fetch_assoc();
+      ?>
+        <div class="admin-message-box">
+          Message from Guidance: <?= htmlspecialchars($row['admin_message']) ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="col-12 text-end">
+         <a href="view_appointments.php" class="btn btn-outline-primary">📋 View Appointments</a>
+      </div>
+
+      <div class="mb-4">
+        <button onclick="showForm('appointment')" class="btn btn-primary me-2">📝 Regular Appointment</button>
+        <a href="special_exam.php" class="btn btn-info text-white">📄 Special Exam Form</a>
+      </div>
+
+      <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>    
+        <div class="success-message" id="successMessage">Appointment successfully submitted!</div>    
+      <?php endif; ?>
+
+      <div id="appointmentForm" style="display:none;">
+        <div class="card shadow-sm p-4">
+          <div class="row">
+            <div class="col-md-8">
+              <form action="add_appointment.php" method="POST" class="row g-3">
+                <div class="col-md-6">
+                  <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($_SESSION['first_name'] . ' ' . ucfirst($_SESSION['lname'])) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($_SESSION['email']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="student_no" class="form-control" value="<?= htmlspecialchars($_SESSION['student_no']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                  <input type="time" name="time" class="form-control" required min="08:00" max="17:00">
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="grade" class="form-control" value="<?= htmlspecialchars($_SESSION['year_level']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="section" class="form-control" value="<?= htmlspecialchars($_SESSION['strand_course']) ?>" readonly>
+                </div>
+
+                <!-- Updated Consultation Category & Interest Dropdown -->
+                <div class="col-md-12">
+                  <label for="mainInterest" class="form-label">Consultation Category</label>
+                  <select id="mainInterest" name="interest" class="form-select" onchange="toggleSubCategory()" required>
+                    <option value="">-- Select Category --</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Behavioral">Behavioral</option>
+                    <option value="Career">Career</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12" id="subInterestDiv" style="display:none;">
+                  <label for="interest" class="form-label">Specific Concern</label>
+                  <select name="specific_concern" id="interest" class="form-select" required>
+                    <option value="">-- Select Concern --</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12">
+                  <textarea name="reason" class="form-control" placeholder="Reason" rows="4" required></textarea>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-success w-100">Add Appointment</button>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-center">
+              <div>
+                <blockquote class="blockquote text-center">
+                  <p class="mb-1" id="quoteText">“Small steps every day lead to big results.”</p>
+                  <footer class="blockquote-footer" id="quoteAuthor">Unknown</footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>  
+        </div>    
+      </div>
+
+
+      <!-- view appointments -->
+        <div id="view_appointments-section" class="content-section p-6 hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">My Appointments</h2>
+
+             <?php if (isset($_GET['updated']) && $_GET['updated'] == 1): ?>
+      <p class="success">✅ Appointment successfully updated!</p>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['deleted']) && $_GET['deleted'] == 1): ?>
+      <p class="danger">🗑️ Appointment successfully deleted.</p>
+    <?php endif; ?>
+
+    <?php if ($appointments && $appointments->num_rows > 0): ?>
+      <?php while ($row = $appointments->fetch_assoc()): ?>
+        <div class="appointment-card">
+          <h4><?= htmlspecialchars($row['name']) ?></h4>
+          <p><strong>Email:</strong> <?= htmlspecialchars($row['email']) ?></p>
+          <p><strong>Grade/Year:</strong> <?= htmlspecialchars($row['grade']) ?></p>
+          <p><strong>Strand/Course:</strong> <?= htmlspecialchars($row['section']) ?></p>
+          <p><strong>Date:</strong> <?= htmlspecialchars($row['date']) ?></p>
+          <p><strong>Time:</strong> <?= htmlspecialchars($row['time']) ?></p>
+          <p><strong>Interest:</strong> <?= htmlspecialchars($row['interest']) ?></p>
+          <p><strong>Specific Concern:</strong> <?= htmlspecialchars($row['specific_concern']) ?></p>
+          <p><strong>Reason:</strong> <?= htmlspecialchars($row['reason']) ?></p>
+          <div class="appointment-actions">
+            <a href="edit_appointment.php?id=<?= $row['id'] ?>" class="edit">✏️ Edit</a>
+            <a href="#" onclick="showDeleteModal(<?= $row['id'] ?>)" class="delete">🗑️ Delete</a>
+          </div>
+        </div>
+      <?php endwhile; ?>
+    <?php else: ?>
+      <p>No appointments found.</p>
+    <?php endif; ?>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete this appointment?
+        </div>
+        <div class="modal-footer">
+          <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Yes, Delete</a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+            
+        <!-- Reports Section -->
+        <div id="reports-section" class="content-section p-6 hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Progress Reports</h2>
+            <h3 class="mb-4">📑 My Reports</h3>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <a href="student_counseling.php">
+            <div class="card shadow-sm p-3 h-100">
+              <h5>🧠 Counseling History</h5>
+              <p class="text-muted mb-0">Check your past counseling sessions</p>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a href="student_incident_reports.php">
+            <div class="card shadow-sm p-3 h-100">
+              <h5>🚨 Incident Reports</h5>
+              <p class="text-muted mb-0">View reports filed about you</p>
+            </div>
+          </a>
+        </div>
+        <?php if (stripos($_SESSION['strand_course'], 'SHS') !== false || stripos($_SESSION['year_level'], 'Grade') !== false): ?>
+  <div class="col-md-4">
+    <a href="student_attendance.php">
+      <div class="card shadow-sm p-3 h-100">
+        <h5>🕒 Attendance Summary</h5>
+        <p class="text-muted mb-0">See your monthly attendance record</p>
+      </div>
+    </a>
+  </div>
+<?php endif; ?>
+        <div class="col-md-4">
+          <a href=".php">
+            <div class="card shadow-sm p-3 h-100">
+              <h5>📜 Exit Interview</h5>
+              <p class="text-muted mb-0">Track your certificate requests</p>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a href="view_special_exam.php">
+            <div class="card shadow-sm p-3 h-100">
+              <h5>📝 Special Exam Eligibility</h5>
+              <p class="text-muted mb-0">Check approved exam requests</p>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-4">
+          <a href="student_appointments.php">
+            <div class="card shadow-sm p-3 h-100">
+              <h5>📅 Appointments</h5>
+              <p class="text-muted mb-0">Upcoming appointments with office</p>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+        <!-- Settings Section -->
+        <div id="settings-section" class="content-section p-6 hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Settings</h2>
+            <div class="content">
+
+
+  <?php if ($successMsg): ?><p class="success-message"><?php echo $successMsg; ?></p><?php endif; ?>
+  <?php if ($errorMsg): ?><p class="error-message"><?php echo $errorMsg; ?></p><?php endif; ?>
+
+  <div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('profileTab', this)">Profile Info</button>
+    <button class="tab-btn" onclick="switchTab('passwordTab', this)">Change Password</button>
+    <button class="tab-btn" onclick="switchTab('securityTab', this)">Security Settings</button>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="profileTab" class="tab-content active">
+    <form method="POST" action="#">
+      <label for="newName">New Display Name</label>
+      <input type="text" name="newName" placeholder="Enter new full name">
+      <input type="submit" value="Update Name">
+    </form>
+  </div>
+
+  <!-- Password Tab -->
+  <div id="passwordTab" class="tab-content">
+    <form method="POST" action="#" onsubmit="return validatePassword()">
+      <p class="security-note"><b>Note:</b> Password must be at least 8 characters. You can only change it again after 10 days.</p>
+      <label>Current Password</label>
+      <div class="password-wrapper"><input type="password" id="currentPass" name="currentPass" required><span class="toggle-eye" onclick="togglePassword('currentPass', this)">👁</span></div>
+      <label>New Password</label>
+      <div class="password-wrapper"><input type="password" id="newPass" name="newPass" required minlength="8"><span class="toggle-eye" onclick="togglePassword('newPass', this)">👁</span></div>
+      <label>Confirm New Password</label>
+      <div class="password-wrapper"><input type="password" id="confirmPass" name="confirmPass" required><span class="toggle-eye" onclick="togglePassword('confirmPass', this)">👁</span></div>
+      <p id="errorMsg" style="color: red; font-size: 13px; display: none;"></p>
+      <input type="submit" value="Change Password">
+    </form>
+  </div>
+
+  <!-- Security Tab -->
+  <div id="securityTab" class="tab-content">
+    <h3>Two-Factor Authentication</h3>
+    <p class="security-note">Add an extra layer of security to your account.</p>
+    <button class="btn btn-primary mb-3">Enable 2FA</button>
+
+    <h3>Login Activity</h3>
+    <p class="security-note">Check recent login sessions and devices.</p>
+    <button class="btn btn-secondary mb-3">View Activity</button>
+
+    <h3>Email Notifications</h3>
+    <p class="security-note">Control security email alerts.</p>
+    <button class="btn btn-info">Manage Notifications</button>
+  </div>
+</div>
+  </main>
+
+    
+ <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+
+        function switchTab(tabId, button) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  button.classList.add('active');
+}
+
+function togglePassword(fieldId, icon) {
+  const input = document.getElementById(fieldId);
+  if (input.type === "password") { input.type = "text"; icon.textContent = "🙈"; } 
+  else { input.type = "password"; icon.textContent = "👁️"; }
+}
+
+function validatePassword() {
+  const newPass = document.getElementById('newPass').value;
+  const confirmPass = document.getElementById('confirmPass').value;
+  const errorMsg = document.getElementById('errorMsg');
+  if (newPass !== confirmPass) { errorMsg.textContent = "Passwords do not match."; errorMsg.style.display = "block"; return false; }
+  if (newPass.length < 8) { errorMsg.textContent = "Password must be at least 8 characters."; errorMsg.style.display = "block"; return false; }
+  errorMsg.style.display = "none";
+  return true;
+}
+         function toggleMessagePanel() {
+      const panel = document.getElementById("messagePanel");
+      panel.classList.toggle("show");
+    }
+
+    function toggleCalendar() {
+  const cal = document.getElementById("mini-calendar");
+  cal.style.display = (cal.style.display === "block") ? "none" : "block";
+}
+
+document.addEventListener("click", function (event) {
+  const calendar = document.getElementById("mini-calendar");
+  const icon = document.getElementById("calendarIcon");
+
+  if (!calendar.contains(event.target) && !icon.contains(event.target)) {
+    calendar.style.display = "none";
+  }
+});
+
+    function toggleProfileDropdown() {
+      const dropdown = document.getElementById("profileDropdown");
+      dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+
+    document.addEventListener("click", function(e) {
+      const dropdown = document.getElementById("profileDropdown");
+      const icon = document.querySelector(".profile-icon");
+      if (!dropdown.contains(e.target) && !icon.contains(e.target)) {
+        dropdown.style.display = "none";
+      }
+    });
+
+    flatpickr("#calendarContainer", {
+      inline: true,
+      defaultDate: "today"
+    });
+
+    function showLogoutModal() {
+      document.getElementById("logoutModal").style.display = "flex";
+    }
+
+    function hideLogoutModal() {
+      document.getElementById("logoutModal").style.display = "none";
+    }
+          const successBox = document.getElementById('successMessage');    
+        if (successBox) {    
+          setTimeout(() => {    
+            successBox.classList.add('hide');    
+          }, 5000);    
+        }
+
+        function showForm(type) {
+          if (type === 'appointment') {
+            document.getElementById('appointmentForm').style.display = 'block';
+          }
+        }
+
+        function toggleSubCategory() {
+          const main = document.getElementById("mainInterest").value;
+          const subDiv = document.getElementById("subInterestDiv");
+          const sub = document.getElementById("interest");
+
+          sub.innerHTML = '<option value="">-- Select Concern --</option>';
+          let options = [];
+
+          if (main === "Personal") {
+            options = ["Body Image", "Financial and Money", "Gender Issues", "Goal Setting", "Pregnancy", "Religioud and Spirit", "Self-Confidence", "Self-Esteem", "Study Habit", "Time Management", "Lack of Interest", "Lost of Motivation", "Eating Concern", "Sleep Pattern Concern", "Legal Concerns"];
+          } else if (main === "Academic") {
+            options = ["Attendance", "Learning Disability", "Grades Thesis", "Adjustment", "Compiliance to School", "Perfectiionism", "Repeating year level", "Underachievment"];
+          } else if (main === "Behavioral") {
+            options = ["Disciplinary", "Handbook", "School Process"];
+          } else if (main === "Career") {
+            options = ["Career Shift", "Decision Making", "School Transfer", "Work", "Career Planning"];
+          }
+
+          options.forEach(function(opt) {
+            const o = document.createElement("option");
+            o.value = opt;
+            o.text = opt;
+            sub.appendChild(o);
+          });
+
+          subDiv.style.display = (options.length > 0) ? "block" : "none";
+        }
+      
+        // Sidebar toggle functionality
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        let sidebarCollapsed = false;
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed');
+                mainContent.classList.remove('main-content-expanded');
+                mainContent.classList.add('main-content-collapsed');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                mainContent.classList.remove('main-content-collapsed');
+                mainContent.classList.add('main-content-expanded');
+            }
+        });
+
+        // Navigation functionality
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active class from all nav items
+                navItems.forEach(nav => {
+                    nav.classList.remove('active-nav');
+                    nav.classList.add('text-gray-600', 'hover:bg-gray-100');
+                });
+                
+                // Add active class to clicked item
+                item.classList.add('active-nav');
+                item.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                
+                // Hide all content sections
+                contentSections.forEach(section => {
+                    section.classList.add('hidden');
+                });
+                
+                // Show selected section
+                const sectionName = item.getAttribute('data-section');
+                const targetSection = document.getElementById(sectionName + '-section');
+                if (targetSection) {
+                    targetSection.classList.remove('hidden');
+                    targetSection.classList.add('animate-fade-in');
+                }
+            });
+        });
+
+        // Category card interactions
+        document.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.querySelector('h4').textContent;
+                alert(`Opening ${title} resources and tools...`);
+            });
+        });
+
+        // Quick action buttons
+        document.querySelectorAll('button').forEach(button => {
+            if (button.textContent.includes('Book Appointment') || button.textContent.includes('Book Now')) {
+                button.addEventListener('click', () => {
+                    alert('Opening appointment booking system...');
+                });
+            } else if (button.textContent.includes('View Reports') || button.textContent.includes('Download')) {
+                button.addEventListener('click', () => {
+                    alert('Generating and downloading report...');
+                });
+            } else if (button.textContent.includes('Contact Counselor')) {
+                button.addEventListener('click', () => {
+                    alert('Opening messaging system to contact your counselor...');
+                });
+            } else if (button.textContent.includes('Resources')) {
+                button.addEventListener('click', () => {
+                    alert('Opening resource library...');
+                });
+            } else if (button.textContent.includes('Save Changes')) {
+                button.addEventListener('click', () => {
+                    alert('Settings saved successfully!');
+                });
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98495996a5040dc9',t:'MTc1ODc5MTAyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

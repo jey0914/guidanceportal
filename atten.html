@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior High RFID Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Enhanced Sidebar styling */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 8px 0 32px rgba(0, 0, 0, 0.3);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-link {
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateX(4px);
+        }
+
+        .sidebar-link.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            border-color: #60a5fa;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 300px;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .header {
+            background: #1e3a8a;
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .school-logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e3a8a;
+            font-size: 1.5rem;
+        }
+
+        /* Student Info Panel */
+        .student-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .profile-picture {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+            border: 4px solid white;
+        }
+
+        .student-info {
+            text-align: center;
+        }
+
+        .student-name {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .student-details {
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .status-present {
+            background: rgba(34, 197, 94, 0.1);
+            color: #15803d;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-late {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+            border: 2px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .status-absent {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 2px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* Attendance Log Panel */
+        .attendance-panel {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #1e3a8a;
+            color: white;
+            padding: 1.5rem 2rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .attendance-table th {
+            background: #f8fafc;
+            color: #374151;
+            font-weight: 600;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .attendance-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #374151;
+        }
+
+        .attendance-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .table-status {
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .table-status.present {
+            background: rgba(34, 197, 94, 0.1);
+            color: #15803d;
+        }
+
+        .table-status.late {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        .table-status.absent {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 0 2rem 2rem;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-label {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .summary-card.total .summary-number { color: #3b82f6; }
+        .summary-card.present .summary-number { color: #22c55e; }
+        .summary-card.late .summary-number { color: #f59e0b; }
+        .summary-card.absent .summary-number { color: #ef4444; }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        /* Animation for status updates */
+        .status-update {
+            animation: statusPulse 0.6s ease-in-out;
+        }
+
+        @keyframes statusPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* RFID Scan Animation */
+        .rfid-scan {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rfid-scan::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+            animation: rfidScan 2s infinite;
+        }
+
+        @keyframes rfidScan {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="p-6">
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Guidance Portal</h2>
+                </div>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="dashboard.php" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="student_records.php" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-xl">
+                    <i class="fas fa-clipboard-check w-5"></i>
+                    <span class="font-medium">Attendance</span>
+                </a>
+                
+                <a href="appointments.php" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl">
+                    <i class="fas fa-calendar-check w-5"></i>
+                    <span class="font-medium">Appointments</span>
+                </a>
+                
+                <a href="student_reports.php" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl">
+                    <i class="fas fa-file-alt w-5"></i>
+                    <span class="font-medium">Reports</span>
+                </a>
+                
+                <a href="settings.php" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-xl">
+                    <i class="fas fa-cog w-5"></i>
+                    <span class="font-medium">Settings</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button class="lg:hidden text-white" onclick="toggleSidebar()">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="school-logo">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">Senior High RFID Attendance System</h1>
+                        <p class="text-blue-100 text-sm">Real-time Student Attendance Monitoring</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-semibold" id="currentDate"></div>
+                    <div class="text-blue-100 text-sm" id="currentTime"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="p-6">
+            <div class="grid lg:grid-cols-2 gap-6 content-grid">
+                <!-- Left Panel - Student Info -->
+                <div class="student-panel rfid-scan" id="studentPanel">
+                    <div class="profile-picture">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    
+                    <div class="student-info">
+                        <h2 class="student-name" id="studentName">Ayesha Dela Cruz</h2>
+                        <div class="student-details">
+                            <p><strong>Student No.:</strong> <span id="studentNo">SHS2025-023</span></p>
+                            <p><strong>Grade & Section:</strong> <span id="gradeSection">Grade 12 – STEM A</span></p>
+                            <p><strong>Course/Strand:</strong> <span id="courseStrand">STEM</span></p>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <div class="status-badge status-present status-update" id="attendanceStatus">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Time In Recorded at <span id="timeInDisplay">7:58 AM</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Attendance Log -->
+                <div class="attendance-panel">
+                    <div class="panel-header">
+                        <i class="fas fa-history mr-2"></i>
+                        Attendance History
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="attendance-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                                <tr>
+                                    <td><strong>Oct 13, 2025</strong></td>
+                                    <td>7:58 AM</td>
+                                    <td>3:45 PM</td>
+                                    <td><span class="table-status present">Present</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oct 14, 2025</strong></td>
+                                    <td>8:15 AM</td>
+                                    <td>4:00 PM</td>
+                                    <td><span class="table-status late">Late</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oct 15, 2025</strong></td>
+                                    <td>–</td>
+                                    <td>–</td>
+                                    <td><span class="table-status absent">Absent</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oct 16, 2025</strong></td>
+                                    <td>7:45 AM</td>
+                                    <td>3:30 PM</td>
+                                    <td><span class="table-status present">Present</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Oct 17, 2025</strong></td>
+                                    <td>8:20 AM</td>
+                                    <td>4:15 PM</td>
+                                    <td><span class="table-status late">Late</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary Cards -->
+                    <div class="summary-grid">
+                        <div class="summary-card total">
+                            <div class="summary-number" id="totalDays">20</div>
+                            <div class="summary-label">Total Days</div>
+                        </div>
+                        <div class="summary-card present">
+                            <div class="summary-number" id="presentDays">15</div>
+                            <div class="summary-label">Present</div>
+                        </div>
+                        <div class="summary-card late">
+                            <div class="summary-number" id="lateDays">3</div>
+                            <div class="summary-label">Late</div>
+                        </div>
+                        <div class="summary-card absent">
+                            <div class="summary-number" id="absentDays">2</div>
+                            <div class="summary-label">Absent</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update current date and time
+        function updateDateTime() {
+            const now = new Date();
+            
+            const dateOptions = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            
+            const timeOptions = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            };
+            
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-US', timeOptions);
+        }
+
+        // Simulate RFID card scan
+        function simulateRFIDScan() {
+            const studentPanel = document.getElementById('studentPanel');
+            const statusElement = document.getElementById('attendanceStatus');
+            const timeDisplay = document.getElementById('timeInDisplay');
+            
+            // Add scan animation
+            studentPanel.classList.add('rfid-scan');
+            
+            // Simulate different attendance scenarios
+            const scenarios = [
+                {
+                    status: 'present',
+                    time: '7:58 AM',
+                    icon: 'fas fa-check-circle',
+                    text: 'Time In Recorded at',
+                    class: 'status-present'
+                },
+                {
+                    status: 'late',
+                    time: '8:15 AM',
+                    icon: 'fas fa-clock',
+                    text: 'Late Arrival at',
+                    class: 'status-late'
+                },
+                {
+                    status: 'absent',
+                    time: '–',
+                    icon: 'fas fa-times-circle',
+                    text: 'Marked as Absent',
+                    class: 'status-absent'
+                }
+            ];
+            
+            // Random scenario for demo
+            const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+            
+            setTimeout(() => {
+                statusElement.className = `status-badge ${scenario.class} status-update`;
+                statusElement.innerHTML = `
+                    <i class="${scenario.icon}"></i>
+                    <span>${scenario.text} ${scenario.time !== '–' ? '<span id="timeInDisplay">' + scenario.time + '</span>' : ''}</span>
+                `;
+                
+                // Add new row to attendance table
+                addAttendanceRecord(scenario);
+                
+                // Remove scan animation
+                setTimeout(() => {
+                    studentPanel.classList.remove('rfid-scan');
+                }, 1000);
+            }, 2000);
+        }
+
+        // Add new attendance record to table
+        function addAttendanceRecord(scenario) {
+            const tableBody = document.getElementById('attendanceTableBody');
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+            
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><strong>${dateStr}</strong></td>
+                <td>${scenario.time !== '–' ? scenario.time : '–'}</td>
+                <td>–</td>
+                <td><span class="table-status ${scenario.status}">${scenario.status.charAt(0).toUpperCase() + scenario.status.slice(1)}</span></td>
+            `;
+            
+            // Insert at the top
+            tableBody.insertBefore(newRow, tableBody.firstChild);
+            
+            // Update summary statistics
+            updateSummaryStats();
+        }
+
+        // Update summary statistics
+        function updateSummaryStats() {
+            const rows = document.querySelectorAll('#attendanceTableBody tr');
+            let present = 0, late = 0, absent = 0;
+            
+            rows.forEach(row => {
+                const status = row.querySelector('.table-status');
+                if (status) {
+                    if (status.classList.contains('present')) present++;
+                    else if (status.classList.contains('late')) late++;
+                    else if (status.classList.contains('absent')) absent++;
+                }
+            });
+            
+            document.getElementById('totalDays').textContent = rows.length;
+            document.getElementById('presentDays').textContent = present;
+            document.getElementById('lateDays').textContent = late;
+            document.getElementById('absentDays').textContent = absent;
+        }
+
+        // Toggle sidebar for mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            // Simulate RFID scan every 10 seconds for demo
+            setInterval(simulateRFIDScan, 10000);
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(e) {
+                const sidebar = document.getElementById('sidebar');
+                const isClickInsideSidebar = sidebar.contains(e.target);
+                const isMenuButton = e.target.closest('button');
+                
+                if (!isClickInsideSidebar && !isMenuButton && window.innerWidth <= 1024) {
+                    sidebar.classList.remove('show');
+                }
+            });
+        });
+
+        // Demo function to manually trigger RFID scan
+        function triggerRFIDScan() {
+            simulateRFIDScan();
+        }
+
+        // Add click event to student panel for demo
+        document.getElementById('studentPanel').addEventListener('click', function() {
+            triggerRFIDScan();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e4ead9165f0dcb',t:'MTc2MDQyMjI2Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

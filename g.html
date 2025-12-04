@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification System | Guidance Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Main Styles */
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #1e40af 100%);
+      min-height: 100vh;
+    }
+    
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Button Styles */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      padding: 0.75rem 2rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: #6b7280;
+      padding: 0.75rem 2rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .btn-secondary:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .btn-link {
+      background: none;
+      border: none;
+      color: #3b82f6;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.3s ease;
+    }
+    
+    .btn-link:hover {
+      color: #1d4ed8;
+    }
+    
+    /* Input Styles */
+    .input-field {
+      width: 100%;
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .input-field.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    
+    .input-field.success {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    
+    /* OTP Input Styles */
+    .otp-input {
+      width: 3rem;
+      height: 3.5rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border: 2px solid #e5e7eb;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    .otp-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      transform: scale(1.05);
+    }
+    
+    .otp-input.filled {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.05);
+    }
+    
+    /* Message Styles */
+    .message {
+      padding: 1rem;
+      border-radius: 0.75rem;
+      margin: 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .message.success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #065f46;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .message.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #991b1b;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .message.info {
+      background: rgba(59, 130, 246, 0.1);
+      color: #1e40af;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Toast Styles */
+    .toast {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      z-index: 1000;
+      padding: 1rem 1.5rem;
+      border-radius: 0.75rem;
+      color: white;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
+    .toast.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    /* Timer Styles */
+    .timer {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 0.5rem;
+      color: #1e40af;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .timer.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #92400e;
+    }
+    
+    .timer.danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #991b1b;
+    }
+    
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .slide-in {
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .success-checkmark {
+      animation: checkmark 0.6s ease-in-out;
+    }
+    
+    @keyframes checkmark {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .otp-input {
+        width: 2.5rem;
+        height: 3rem;
+        font-size: 1.25rem;
+      }
+      
+      .toast {
+        top: 1rem;
+        right: 1rem;
+        left: 1rem;
+        transform: translateY(-100%);
+      }
+      
+      .toast.show {
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body class="gradient-bg">
+  
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+  
+  <div class="min-h-screen p-4 flex items-center justify-center">
+    <div class="w-full max-w-md">
+      
+      <!-- Verify Email Page -->
+      <div id="verifyEmailPage" class="card p-8 fade-in">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-envelope text-blue-600 text-2xl"></i>
+          </div>
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">Verify Your Email</h1>
+          <p class="text-gray-600">We'll send a one-time code to your personal email.</p>
+        </div>
+        
+        <!-- Student Info Card -->
+        <div class="bg-gray-50 rounded-xl p-4 mb-6" data-student-info>
+          <h3 class="font-semibold text-gray-800 mb-2">Student Information</h3>
+          <div class="space-y-1 text-sm text-gray-600">
+            <div><span class="font-medium">Name:</span> <span data-student-name>John Michael Santos</span></div>
+            <div><span class="font-medium">Student No:</span> <span data-student-number>2024-001234</span></div>
+            <div><span class="font-medium">Program:</span> <span data-student-program>Grade 12 - STEM</span></div>
+          </div>
+        </div>
+        
+        <!-- Form A: Send OTP to Existing Email -->
+        <form id="sendOTPForm" class="space-y-6" data-form="send-otp">
+          <fieldset>
+            <legend class="sr-only">Send OTP to existing email</legend>
+            
+            <div>
+              <p class="text-gray-700 mb-4">We found the following email in your profile:</p>
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                <div class="flex items-center gap-3">
+                  <i class="fas fa-envelope text-blue-600"></i>
+                  <span class="font-mono text-lg" data-masked-email>j*****@gmail.com</span>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500">If this is not your email, click 'Change Email'.</p>
+            </div>
+            
+            <!-- Hidden input for existing email -->
+            <input type="hidden" name="existing_email" value="john.santos@gmail.com" data-existing-email>
+            <input type="hidden" name="action" value="send_otp_existing">
+            
+            <div class="space-y-3">
+              <button type="submit" class="btn-primary w-full" data-submit-btn>
+                <i class="fas fa-paper-plane"></i>
+                Send OTP
+              </button>
+              <button type="button" class="btn-link w-full" onclick="showChangeEmailForm()">
+                Change Email
+              </button>
+            </div>
+          </fieldset>
+        </form>
+        
+        <!-- Form B: Enter New Email -->
+        <form id="newEmailForm" class="space-y-6 hidden" data-form="new-email">
+          <fieldset>
+            <legend class="sr-only">Enter new email address</legend>
+            
+            <div>
+              <label for="newEmailInput" class="block text-sm font-semibold text-gray-700 mb-2">
+                Personal Email Address *
+              </label>
+              <input 
+                type="email" 
+                id="newEmailInput"
+                name="new_email"
+                class="input-field"
+                placeholder="you@example.com"
+                required
+                aria-describedby="emailHelp emailError"
+                data-email-input
+              >
+              <div id="emailHelp" class="mt-2 text-sm text-gray-500">
+                Please enter a valid email address.
+              </div>
+              <div id="emailError" class="mt-2 text-sm text-red-600 hidden" role="alert">
+                Please enter a valid email address.
+              </div>
+            </div>
+            
+            <input type="hidden" name="action" value="send_otp_new">
+            
+            <div class="space-y-3">
+              <button type="submit" class="btn-primary w-full" data-submit-btn>
+                <i class="fas fa-shield-alt"></i>
+                Verify & Send OTP
+              </button>
+              <button type="button" class="btn-link w-full" onclick="showExistingEmailForm()">
+                Back to existing email
+              </button>
+            </div>
+          </fieldset>
+        </form>
+        
+      </div>
+      
+      <!-- Enter OTP Page -->
+      <div id="enterOTPPage" class="card p-8 fade-in hidden">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-lock text-green-600 text-2xl"></i>
+          </div>
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">Enter Verification Code</h1>
+          <p class="text-gray-600">
+            We sent a 6-digit code to <span class="font-semibold" data-sent-email>j*****@gmail.com</span>. 
+            This code will expire in 5 minutes.
+          </p>
+        </div>
+        
+        <!-- Timer -->
+        <div class="text-center mb-6">
+          <div class="timer" id="otpTimer" data-timer>
+            <i class="fas fa-clock"></i>
+            <span id="timerDisplay">05:00</span>
+          </div>
+        </div>
+        
+        <!-- OTP Verification Form -->
+        <form id="otpVerificationForm" class="space-y-6" data-form="verify-otp">
+          <fieldset>
+            <legend class="sr-only">Enter verification code</legend>
+            
+            <!-- OTP Input -->
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-gray-700 mb-4 text-center">
+                Enter 6-digit verification code *
+              </label>
+              <div class="flex justify-center gap-2 mb-4" data-otp-container>
+                <input type="text" class="otp-input" name="otp_digit_1" maxlength="1" data-otp-input="0" aria-label="Digit 1" required>
+                <input type="text" class="otp-input" name="otp_digit_2" maxlength="1" data-otp-input="1" aria-label="Digit 2" required>
+                <input type="text" class="otp-input" name="otp_digit_3" maxlength="1" data-otp-input="2" aria-label="Digit 3" required>
+                <input type="text" class="otp-input" name="otp_digit_4" maxlength="1" data-otp-input="3" aria-label="Digit 4" required>
+                <input type="text" class="otp-input" name="otp_digit_5" maxlength="1" data-otp-input="4" aria-label="Digit 5" required>
+                <input type="text" class="otp-input" name="otp_digit_6" maxlength="1" data-otp-input="5" aria-label="Digit 6" required>
+              </div>
+              
+              <!-- Hidden combined OTP field for easier backend processing -->
+              <input type="hidden" name="otp_code" id="otpCodeHidden" data-otp-combined>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="otpMessages" class="mb-6"></div>
+            
+            <input type="hidden" name="action" value="verify_otp">
+            <input type="hidden" name="email" data-verification-email>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="btn-primary w-full" data-submit-btn>
+              <i class="fas fa-check-circle"></i>
+              Verify Code
+            </button>
+          </fieldset>
+        </form>
+        
+        <!-- Additional Actions Form -->
+        <form id="resendOTPForm" class="mt-4" data-form="resend-otp">
+          <input type="hidden" name="action" value="resend_otp">
+          <input type="hidden" name="email" data-resend-email>
+          
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button type="submit" id="resendBtn" class="btn-secondary flex-1" data-submit-btn>
+              <i class="fas fa-redo"></i>
+              Resend Code
+            </button>
+            <button type="button" class="btn-secondary flex-1" onclick="goBackToEmail()">
+              <i class="fas fa-arrow-left"></i>
+              Back
+            </button>
+          </div>
+          
+          <div id="resendCooldown" class="text-center text-sm text-gray-500 hidden mt-3">
+            You can resend after <span id="resendTimer">30</span> seconds.
+          </div>
+        </form>
+        
+      </div>
+      
+      <!-- Success Page -->
+      <div id="successPage" class="card p-8 text-center fade-in hidden">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-check text-green-600 text-3xl success-checkmark"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">Email Verified!</h1>
+        <p class="text-gray-600 mb-6">Your email has been successfully verified.</p>
+        <div class="flex items-center justify-center gap-2 text-blue-600">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Redirecting to dashboard...</span>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <script>
+    // Global state
+    let currentEmail = 'j*****@gmail.com';
+    let otpTimer = null;
+    let resendTimer = null;
+    let timeLeft = 300; // 5 minutes in seconds
+    let resendCooldown = 0;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      setupOTPInputs();
+      setupFormHandlers();
+      // Show existing email form by default
+      showExistingEmailForm();
+    });
+    
+    // Form Event Handlers
+    function setupFormHandlers() {
+      // Send OTP Form (existing email)
+      document.getElementById('sendOTPForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleSendOTPForm(this);
+      });
+      
+      // New Email Form
+      document.getElementById('newEmailForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleNewEmailForm(this);
+      });
+      
+      // OTP Verification Form
+      document.getElementById('otpVerificationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleOTPVerificationForm(this);
+      });
+      
+      // Resend OTP Form
+      document.getElementById('resendOTPForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleResendOTPForm(this);
+      });
+    }
+    
+    // Form Handlers
+    function handleSendOTPForm(form) {
+      const submitBtn = form.querySelector('[data-submit-btn]');
+      const formData = new FormData(form);
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        showToast('Verification code sent!', 'success');
+        showOTPPage(currentEmail);
+      }, 2000);
+    }
+    
+    function handleNewEmailForm(form) {
+      const emailInput = form.querySelector('[data-email-input]');
+      const submitBtn = form.querySelector('[data-submit-btn]');
+      const formData = new FormData(form);
+      const email = formData.get('new_email');
+      
+      clearEmailError();
+      
+      if (!email) {
+        showEmailError('Email address is required.');
+        emailInput.focus();
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        showEmailError('Please enter a valid email address.');
+        emailInput.focus();
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        currentEmail = maskEmail(email);
+        showToast('Verification code sent!', 'success');
+        showOTPPage(currentEmail);
+      }, 2000);
+    }
+    
+    function handleOTPVerificationForm(form) {
+      const submitBtn = form.querySelector('[data-submit-btn]');
+      const formData = new FormData(form);
+      
+      // Combine OTP digits
+      const otpCode = getOTPValue();
+      document.getElementById('otpCodeHidden').value = otpCode;
+      
+      const messagesContainer = document.getElementById('otpMessages');
+      messagesContainer.innerHTML = '';
+      
+      if (otpCode.length !== 6) {
+        showOTPMessage('Please enter all 6 digits.', 'error');
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Simulate different responses for demo
+        if (otpCode === '123456') {
+          clearInterval(otpTimer);
+          showSuccessPage();
+        } else if (otpCode === '000000') {
+          showOTPMessage('Invalid verification code. Please try again.', 'error');
+          clearOTPInputs();
+          document.querySelector('[data-otp-input="0"]').focus();
+        } else {
+          // Default success for demo
+          clearInterval(otpTimer);
+          showSuccessPage();
+        }
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+      }, 2000);
+    }
+    
+    function handleResendOTPForm(form) {
+      if (resendCooldown > 0) return;
+      
+      const submitBtn = form.querySelector('[data-submit-btn]');
+      const formData = new FormData(form);
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        showToast('New verification code sent!', 'success');
+        clearOTPInputs();
+        startOTPTimer();
+        startResendCooldown();
+        
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+        
+        document.querySelector('[data-otp-input="0"]').focus();
+      }, 2000);
+    }
+    
+    // Page Navigation Functions
+    function showExistingEmailForm() {
+      document.getElementById('sendOTPForm').classList.remove('hidden');
+      document.getElementById('newEmailForm').classList.add('hidden');
+    }
+    
+    function showChangeEmailForm() {
+      document.getElementById('sendOTPForm').classList.add('hidden');
+      document.getElementById('newEmailForm').classList.remove('hidden');
+      document.getElementById('newEmailInput').focus();
+    }
+    
+    function showOTPPage(email) {
+      document.getElementById('verifyEmailPage').classList.add('hidden');
+      document.getElementById('enterOTPPage').classList.remove('hidden');
+      document.querySelector('[data-sent-email]').textContent = email;
+      
+      // Update hidden email fields
+      document.querySelector('[data-verification-email]').value = email;
+      document.querySelector('[data-resend-email]').value = email;
+      
+      startOTPTimer();
+      document.querySelector('[data-otp-input="0"]').focus();
+    }
+    
+    function showSuccessPage() {
+      document.getElementById('enterOTPPage').classList.add('hidden');
+      document.getElementById('successPage').classList.remove('hidden');
+      
+      // Simulate redirect after 3 seconds
+      setTimeout(() => {
+        showToast('Redirecting to dashboard...', 'success');
+        // In real app: window.location.href = 'dashboard.php';
+      }, 3000);
+    }
+    
+    function goBackToEmail() {
+      document.getElementById('enterOTPPage').classList.add('hidden');
+      document.getElementById('verifyEmailPage').classList.remove('hidden');
+      clearInterval(otpTimer);
+      clearOTPInputs();
+    }
+    
+    // Email Validation
+    function validateEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+    
+    function showEmailError(message) {
+      const input = document.getElementById('newEmailInput');
+      const error = document.getElementById('emailError');
+      const help = document.getElementById('emailHelp');
+      
+      input.classList.add('error');
+      error.textContent = message;
+      error.classList.remove('hidden');
+      help.classList.add('hidden');
+    }
+    
+    function clearEmailError() {
+      const input = document.getElementById('newEmailInput');
+      const error = document.getElementById('emailError');
+      const help = document.getElementById('emailHelp');
+      
+      input.classList.remove('error');
+      error.classList.add('hidden');
+      help.classList.remove('hidden');
+    }
+    
+    // OTP Functions
+    function sendOTP() {
+      const btn = document.querySelector('[data-action="send-otp"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        showToast('Verification code sent!', 'success');
+        showOTPPage(currentEmail);
+      }, 2000);
+    }
+    
+    function verifyAndSendOTP() {
+      const emailInput = document.getElementById('emailInput');
+      const email = emailInput.value.trim();
+      
+      clearEmailError();
+      
+      if (!email) {
+        showEmailError('Email address is required.');
+        emailInput.focus();
+        return;
+      }
+      
+      if (!validateEmail(email)) {
+        showEmailError('Please enter a valid email address.');
+        emailInput.focus();
+        return;
+      }
+      
+      const btn = document.querySelector('[data-action="verify-send-otp"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        currentEmail = maskEmail(email);
+        showToast('Verification code sent!', 'success');
+        showOTPPage(currentEmail);
+      }, 2000);
+    }
+    
+    function maskEmail(email) {
+      const [username, domain] = email.split('@');
+      const maskedUsername = username.charAt(0) + '*'.repeat(Math.max(0, username.length - 2)) + username.slice(-1);
+      return maskedUsername + '@' + domain;
+    }
+    
+    // OTP Input Handling
+    function setupOTPInputs() {
+      const inputs = document.querySelectorAll('[data-otp-input]');
+      
+      inputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+          const value = e.target.value;
+          
+          // Only allow numbers
+          if (!/^\d$/.test(value)) {
+            e.target.value = '';
+            return;
+          }
+          
+          // Add filled class
+          if (value) {
+            e.target.classList.add('filled');
+            // Move to next input
+            if (index < inputs.length - 1) {
+              inputs[index + 1].focus();
+            }
+          } else {
+            e.target.classList.remove('filled');
+          }
+          
+          // Update hidden combined field
+          updateCombinedOTP();
+          
+          // Check if all inputs are filled
+          checkOTPComplete();
+        });
+        
+        input.addEventListener('keydown', function(e) {
+          // Handle backspace
+          if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            inputs[index - 1].focus();
+            inputs[index - 1].value = '';
+            inputs[index - 1].classList.remove('filled');
+          }
+          
+          // Handle paste
+          if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            navigator.clipboard.readText().then(text => {
+              const digits = text.replace(/\D/g, '').slice(0, 6);
+              digits.split('').forEach((digit, i) => {
+                if (inputs[i]) {
+                  inputs[i].value = digit;
+                  inputs[i].classList.add('filled');
+                }
+              });
+              checkOTPComplete();
+            });
+          }
+        });
+      });
+    }
+    
+    function checkOTPComplete() {
+      const inputs = document.querySelectorAll('[data-otp-input]');
+      const values = Array.from(inputs).map(input => input.value);
+      const isComplete = values.every(value => value !== '');
+      
+      if (isComplete) {
+        // Auto-verify when all digits are entered
+        setTimeout(verifyOTP, 500);
+      }
+    }
+    
+    function clearOTPInputs() {
+      const inputs = document.querySelectorAll('[data-otp-input]');
+      inputs.forEach(input => {
+        input.value = '';
+        input.classList.remove('filled');
+      });
+    }
+    
+    function getOTPValue() {
+      const inputs = document.querySelectorAll('[data-otp-input]');
+      return Array.from(inputs).map(input => input.value).join('');
+    }
+    
+    function updateCombinedOTP() {
+      const combinedField = document.getElementById('otpCodeHidden');
+      if (combinedField) {
+        combinedField.value = getOTPValue();
+      }
+    }
+    
+    function verifyOTP() {
+      const otp = getOTPValue();
+      const messagesContainer = document.getElementById('otpMessages');
+      
+      // Clear previous messages
+      messagesContainer.innerHTML = '';
+      
+      if (otp.length !== 6) {
+        showOTPMessage('Please enter all 6 digits.', 'error');
+        return;
+      }
+      
+      const btn = document.querySelector('[data-action="verify-otp"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        // Simulate different responses for demo
+        if (otp === '123456') {
+          clearInterval(otpTimer);
+          showSuccessPage();
+        } else if (otp === '000000') {
+          showOTPMessage('Invalid verification code. Please try again.', 'error');
+          clearOTPInputs();
+          document.querySelector('[data-otp-input="0"]').focus();
+        } else {
+          // Default success for demo
+          clearInterval(otpTimer);
+          showSuccessPage();
+        }
+        
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Code';
+      }, 2000);
+    }
+    
+    function showOTPMessage(message, type) {
+      const messagesContainer = document.getElementById('otpMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type} slide-in`;
+      
+      const icon = type === 'success' ? 'check-circle' : 
+                   type === 'error' ? 'exclamation-circle' : 'info-circle';
+      
+      messageDiv.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (messageDiv.parentNode) {
+          messageDiv.remove();
+        }
+      }, 5000);
+    }
+    
+    // Timer Functions
+    function startOTPTimer() {
+      timeLeft = 300; // Reset to 5 minutes
+      updateTimerDisplay();
+      
+      otpTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+          clearInterval(otpTimer);
+          showOTPMessage('Verification code has expired. Please request a new one.', 'error');
+        }
+      }, 1000);
+    }
+    
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      document.getElementById('timerDisplay').textContent = display;
+      
+      const timerElement = document.getElementById('otpTimer');
+      timerElement.classList.remove('warning', 'danger');
+      
+      if (timeLeft <= 60) {
+        timerElement.classList.add('danger');
+      } else if (timeLeft <= 120) {
+        timerElement.classList.add('warning');
+      }
+    }
+    
+    function resendOTP() {
+      if (resendCooldown > 0) return;
+      
+      const btn = document.getElementById('resendBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+      
+      // Simulate API call
+      setTimeout(() => {
+        showToast('New verification code sent!', 'success');
+        clearOTPInputs();
+        startOTPTimer();
+        startResendCooldown();
+        
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+        
+        document.querySelector('[data-otp-input="0"]').focus();
+      }, 2000);
+    }
+    
+    function startResendCooldown() {
+      resendCooldown = 30;
+      const cooldownElement = document.getElementById('resendCooldown');
+      const timerElement = document.getElementById('resendTimer');
+      const resendBtn = document.getElementById('resendBtn');
+      
+      cooldownElement.classList.remove('hidden');
+      resendBtn.disabled = true;
+      
+      const cooldownInterval = setInterval(() => {
+        resendCooldown--;
+        timerElement.textContent = resendCooldown;
+        
+        if (resendCooldown <= 0) {
+          clearInterval(cooldownInterval);
+          cooldownElement.classList.add('hidden');
+          resendBtn.disabled = false;
+        }
+      }, 1000);
+    }
+    
+    // Toast Functions
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+      toast.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      // Show toast
+      setTimeout(() => toast.classList.add('show'), 100);
+      
+      // Hide and remove toast
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+    
+    // Demo Functions (for testing)
+    function simulateEmailOnFile() {
+      showEmailOnFileState();
+      currentEmail = 'j*****@gmail.com';
+    }
+    
+    function simulateNoEmail() {
+      showChangeEmailState();
+    }
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98cd57fb33880dcb',t:'MTc2MDE3NTA3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
