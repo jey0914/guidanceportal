@@ -1,0 +1,390 @@
+<?php    
+session_start();    
+if (!isset($_SESSION['email'])) {    
+    header("Location: login.php");    
+    exit();    
+}
+
+include("db.php");
+
+$successMsg = "";
+$errorMsg = "";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $student_no = $_POST['student_no'];
+    $date = $_POST['date'];
+    $time = $_POST['time'];
+    $grade = $_POST['grade'];
+    $section = $_POST['section'];
+    $interest = $_POST['interest'];
+    $reason = $_POST['reason'];
+
+    // Time validation (backend)
+    if ($time < "08:00" || $time > "17:00") {
+        $errorMsg = "Error: Appointments are only allowed from 8:00 AM to 5:00 PM.";
+    } elseif ($time >= "12:00" && $time < "13:00") {
+        $errorMsg = "Error: Appointments are not allowed during lunch break (12:00 PM – 1:00 PM).";
+    } else {
+        $stmt = $con->prepare("INSERT INTO appointments (name, email, student_no, date, time, grade, section, interest, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssssss", $name, $email, $student_no, $date, $time, $grade, $section, $interest, $reason);
+        if ($stmt->execute()) {
+            $successMsg = "Appointment successfully submitted!";
+        } else {
+            $errorMsg = "Something went wrong. Please try again.";
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>  
+<html lang="en">    
+<head>    
+  <meta charset="UTF-8">    
+  <title>Appointments</title>    
+  <link rel="stylesheet" href="stylesheet2.css">    
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+     /* STI Dashboard Sidebar Style */
+    /* STI Dashboard Sidebar Style */
+.sidebar {
+  background: linear-gradient(180deg, #003366 0%, #00509e 100%);
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+}
+
+.sidebar h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 40px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sidebar ul li {
+  margin-bottom: 12px;
+}
+
+.sidebar ul li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #f1f1f1;
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.sidebar ul li a i {
+  width: 22px;
+  text-align: center;
+}
+
+.sidebar ul li a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+}
+
+   /* Sidebar */
+.sidebar {
+  background: #1d3557;
+  color: white;
+  padding: 20px;
+  height: 100vh;
+  width: 180px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  font-size: 22px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 15px;
+}
+
+.sidebar ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  display: block;
+  padding: 10px;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.sidebar ul li a:hover {
+  background: #457b9d;
+}
+
+/* Content */
+.content {
+  margin-left: 200px;
+  padding: 40px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f8f9fa;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 28px;
+  color: #1d3557;
+}
+
+/* Top Bar */
+.top-bar {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 10;
+}
+
+.top-bar i {
+  font-size: 20px;
+  color: #1d3557;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.top-bar i:hover {
+  transform: scale(1.1);
+}
+    .success-message {
+      position: fixed;    
+      bottom: 20px;    
+      right: 20px;    
+      background-color: #d4edda;    
+      color: #155724;    
+      padding: 12px 18px;    
+      border: 1px solid #c3e6cb;    
+      border-radius: 8px;    
+      font-weight: bold;    
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);    
+      z-index: 9999;    
+      opacity: 1;    
+      transition: opacity 0.5s ease-in-out;    
+    }  
+    .success-message.hide {    
+      opacity: 0;    
+      visibility: hidden;    
+    }
+
+    form button {    
+      background-color: #1d3557;    
+      color: white;    
+      border: none;    
+      cursor: pointer;    
+    }    
+
+    form button:hover {    
+      background-color: #16324f;    
+    }    
+
+    form {    
+      max-width: 600px;    
+    }    
+
+    .nav-links {    
+      margin-bottom: 20px;    
+    }    
+
+    .nav-links a {    
+      margin-right: 20px;    
+      font-size: 14px;    
+      color: #1d3557;    
+      text-decoration: underline;    
+    }    
+
+    .nav-links a:hover {    
+      text-decoration: none;    
+    }
+
+    .admin-message-box {
+      background-color: #e1ecf4;
+      color: #0b5394;
+      padding: 12px 16px;
+      border: 1px solid #a4d3f0;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+  </style>    
+</head>    
+<body>    
+  <div class="dashboard">    
+    <!-- Sidebar -->    
+    <div class="sidebar">    
+      <h2>Guidance Office</h2>    
+      <ul>
+  <li><a href="dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
+  <?php if (stripos($_SESSION['strand_course'], 'SHS') !== false || stripos($_SESSION['year_level'], 'Grade') !== false): ?>
+  <li><a href="student_records.php"><i class="fas fa-clipboard-check"></i> Attendance</a></li>
+  <?php endif; ?>
+  <li><a href="appointments.php"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+  <li><a href="student_reports.php"><i class="fas fa-file-alt"></i> Reports</a></li>
+  <li><a href="settings.php"><i class="fas fa-cog"></i> Settings</a></li>
+</ul>
+    </div>  
+
+    <div class="content">    
+      <h1 class="mb-4">Select Appointment Category</h1>
+
+      <?php
+      include("db.php");
+      $email = $_SESSION['email'];
+      $sql = "SELECT admin_message FROM appointments WHERE email = ? AND admin_message IS NOT NULL ORDER BY id DESC LIMIT 1";
+      $stmt = $con->prepare($sql);
+      $stmt->bind_param("s", $email);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      if ($result->num_rows > 0):
+        $row = $result->fetch_assoc();
+      ?>
+        <div class="admin-message-box">
+          Message from Guidance: <?= htmlspecialchars($row['admin_message']) ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="col-12 text-end">
+         <a href="view_appointments.php" class="btn btn-outline-primary">📋 View Appointments</a>
+      </div>
+
+      <div class="mb-4">
+        <button onclick="showForm('appointment')" class="btn btn-primary me-2">📝 Regular Appointment</button>
+        <a href="special_exam.php" class="btn btn-info text-white">📄 Special Exam Form</a>
+      </div>
+
+      <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>    
+        <div class="success-message" id="successMessage">Appointment successfully submitted!</div>    
+      <?php endif; ?>
+
+      <div id="appointmentForm" style="display:none;">
+        <div class="card shadow-sm p-4">
+          <div class="row">
+            <div class="col-md-8">
+              <form action="add_appointment.php" method="POST" class="row g-3">
+                <div class="col-md-6">
+                  <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($_SESSION['first_name'] . ' ' . ucfirst($_SESSION['lname'])) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($_SESSION['email']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="student_no" class="form-control" value="<?= htmlspecialchars($_SESSION['student_no']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                  <input type="time" name="time" class="form-control" required min="08:00" max="17:00">
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="grade" class="form-control" value="<?= htmlspecialchars($_SESSION['year_level']) ?>" readonly>
+                </div>
+                <div class="col-md-6">
+                  <input type="text" name="section" class="form-control" value="<?= htmlspecialchars($_SESSION['strand_course']) ?>" readonly>
+                </div>
+
+                <!-- Updated Consultation Category & Interest Dropdown -->
+                <div class="col-md-12">
+                  <label for="mainInterest" class="form-label">Consultation Category</label>
+                  <select id="mainInterest" name="interest" class="form-select" onchange="toggleSubCategory()" required>
+                    <option value="">-- Select Category --</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Academic">Academic</option>
+                    <option value="Behavioral">Behavioral</option>
+                    <option value="Career">Career</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12" id="subInterestDiv" style="display:none;">
+                  <label for="interest" class="form-label">Specific Concern</label>
+                  <select name="specific_concern" id="interest" class="form-select" required>
+                    <option value="">-- Select Concern --</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12">
+                  <textarea name="reason" class="form-control" placeholder="Reason" rows="4" required></textarea>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn btn-success w-100">Add Appointment</button>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-center">
+              <div>
+                <blockquote class="blockquote text-center">
+                  <p class="mb-1" id="quoteText">“Small steps every day lead to big results.”</p>
+                  <footer class="blockquote-footer" id="quoteAuthor">Unknown</footer>
+                </blockquote>
+              </div>
+            </div>
+          </div>  
+        </div>    
+      </div>
+
+      <script>    
+        const successBox = document.getElementById('successMessage');    
+        if (successBox) {    
+          setTimeout(() => {    
+            successBox.classList.add('hide');    
+          }, 5000);    
+        }
+
+        function showForm(type) {
+          if (type === 'appointment') {
+            document.getElementById('appointmentForm').style.display = 'block';
+          }
+        }
+
+        function toggleSubCategory() {
+          const main = document.getElementById("mainInterest").value;
+          const subDiv = document.getElementById("subInterestDiv");
+          const sub = document.getElementById("interest");
+
+          sub.innerHTML = '<option value="">-- Select Concern --</option>';
+          let options = [];
+
+          if (main === "Personal") {
+            options = ["Body Image", "Financial and Money", "Gender Issues", "Goal Setting", "Pregnancy", "Religioud and Spirit", "Self-Confidence", "Self-Esteem", "Study Habit", "Time Management", "Lack of Interest", "Lost of Motivation", "Eating Concern", "Sleep Pattern Concern", "Legal Concerns"];
+          } else if (main === "Academic") {
+            options = ["Attendance", "Learning Disability", "Grades Thesis", "Adjustment", "Compiliance to School", "Perfectiionism", "Repeating year level", "Underachievment"];
+          } else if (main === "Behavioral") {
+            options = ["Disciplinary", "Handbook", "School Process"];
+          } else if (main === "Career") {
+            options = ["Career Shift", "Decision Making", "School Transfer", "Work", "Career Planning"];
+          }
+
+          options.forEach(function(opt) {
+            const o = document.createElement("option");
+            o.value = opt;
+            o.text = opt;
+            sub.appendChild(o);
+          });
+
+          subDiv.style.display = (options.length > 0) ? "block" : "none";
+        }
+      </script>
+    </div>
+  </div>
+</body>    
+</html>
