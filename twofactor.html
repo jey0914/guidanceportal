@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student 2FA Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 55px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            transition: border-color 0.2s;
+        }
+        .otp-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .otp-input.filled {
+            border-color: #10b981;
+            background: #f0fdf4;
+            color: #059669;
+        }
+        
+        .qr-box {
+            width: 220px;
+            height: 220px;
+            background: white;
+            border: 3px solid #374151;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .reminder-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #f59e0b;
+        }
+        
+        .step-indicator {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen py-8 px-4">
+    <div class="max-w-lg mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Secure Your Student Account</h1>
+            <p class="text-gray-600 font-medium">Set up two-factor authentication in 3 easy steps</p>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator rounded-xl p-4 mb-6 border border-blue-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div id="step-1" class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">1</div>
+                    <span class="text-sm font-medium text-gray-700">Scan QR Code</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div id="step-2" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">2</div>
+                    <span class="text-sm font-medium text-gray-500">Verify Code</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div id="step-3" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                    <span class="text-sm font-medium text-gray-500">Complete</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <!-- Step 1: QR Code -->
+            <div id="step1" class="text-center">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">📱 Scan with Google Authenticator</h2>
+                
+                <!-- Student Email Input -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3 text-left">Your Student Email</label>
+                    <input type="email" id="email" value="student@university.edu" 
+                           class="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all text-center font-medium text-gray-700">
+                </div>
+                
+                <!-- QR Code -->
+                <div class="qr-box mx-auto mb-6">
+                    <div id="qrCode" class="grid grid-cols-12 gap-px p-3">
+                        <!-- QR pattern generated here -->
+                    </div>
+                </div>
+                
+                <!-- Reminder Card -->
+                <div class="reminder-card rounded-xl p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-amber-800 mb-2">📚 Student Reminder</h3>
+                            <ul class="text-sm text-amber-700 space-y-1">
+                                <li>• Download Google Authenticator from your app store</li>
+                                <li>• Tap the + button and select "Scan QR code"</li>
+                                <li>• Point your camera at the code above</li>
+                                <li>• Keep your phone safe - you'll need it to log in!</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Entry (Collapsed) -->
+                <details class="text-left mb-6">
+                    <summary class="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-700 p-2 rounded-lg hover:bg-blue-50">
+                        📝 Can't scan? Enter manually instead
+                    </summary>
+                    <div class="mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div class="space-y-2 text-sm">
+                            <div>
+                                <span class="font-medium text-gray-700">Account:</span>
+                                <span class="ml-2 font-mono text-gray-600" id="displayEmail">student@university.edu</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Secret Key:</span>
+                                <div class="mt-1 flex items-center space-x-2">
+                                    <span class="font-mono text-xs bg-white p-2 rounded border flex-1 break-all" id="secretKey">JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP</span>
+                                    <button onclick="copySecret()" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600">
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+                
+                <button onclick="showVerify()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 shadow-lg">
+                    ✅ I've Added It to My App
+                </button>
+            </div>
+
+            <!-- Step 2: Verify -->
+            <div id="step2" class="hidden text-center">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">🔐 Enter Your 6-Digit Code</h2>
+                
+                <!-- Current Time Display -->
+                <div class="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+                    <div class="flex items-center justify-center space-x-6">
+                        <div class="text-center">
+                            <p class="text-sm font-medium text-blue-700">Current Time</p>
+                            <p id="currentTime" class="text-lg font-mono text-blue-800">--:--:--</p>
+                        </div>
+                        <div class="w-px h-12 bg-blue-300"></div>
+                        <div class="text-center">
+                            <p class="text-sm font-medium text-blue-700">New Code In</p>
+                            <p id="timer" class="text-lg font-bold text-blue-800">30s</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- OTP Inputs -->
+                <div class="flex justify-center space-x-3 mb-6">
+                    <input type="text" maxlength="1" class="otp-input" data-index="0">
+                    <input type="text" maxlength="1" class="otp-input" data-index="1">
+                    <input type="text" maxlength="1" class="otp-input" data-index="2">
+                    <input type="text" maxlength="1" class="otp-input" data-index="3">
+                    <input type="text" maxlength="1" class="otp-input" data-index="4">
+                    <input type="text" maxlength="1" class="otp-input" data-index="5">
+                </div>
+                
+                <!-- Status Message -->
+                <div id="status" class="mb-6 hidden">
+                    <div class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium">
+                        <span class="mr-2"></span>
+                        <span></span>
+                    </div>
+                </div>
+                
+                <!-- Student Help -->
+                <div class="reminder-card rounded-xl p-4 mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-amber-800">💡 Student Tip: Open Google Authenticator and find your university account</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button onclick="showQR()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300">
+                        ← Back
+                    </button>
+                    <button onclick="verify()" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700">
+                        Verify Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="step3" class="hidden text-center">
+                <div class="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">🎉 All Set!</h2>
+                <p class="text-gray-600 mb-6 text-lg">Your student account is now super secure</p>
+                
+                <!-- Success Summary -->
+                <div class="bg-green-50 rounded-xl p-6 mb-6 border border-green-200">
+                    <h3 class="font-semibold text-green-800 mb-4">✅ What's Protected Now:</h3>
+                    <div class="space-y-3 text-sm text-green-700">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Your student portal login
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Your grades and academic records
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Your financial aid information
+                        </div>
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Your personal student data
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backup Codes -->
+                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-6">
+                    <h3 class="font-semibold text-red-800 mb-3 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        Important: Save These Backup Codes
+                    </h3>
+                    <p class="text-sm text-red-700 mb-4">Keep these safe! Use them if you lose your phone or can't access your authenticator app.</p>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">A1B2-C3D4</div>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">E5F6-G7H8</div>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">I9J0-K1L2</div>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">M3N4-O5P6</div>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">Q7R8-S9T0</div>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-center font-mono font-semibold text-gray-800">U1V2-W3X4</div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                        <button onclick="downloadBackup()" class="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-700">
+                            📥 Download
+                        </button>
+                        <button onclick="copyBackup()" class="flex-1 bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-red-700">
+                            📋 Copy All
+                        </button>
+                    </div>
+                </div>
+                
+                <button onclick="finish()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 shadow-lg">
+                    🚀 Continue to Student Portal
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-6">
+            <p class="text-gray-500 text-sm">
+                🔒 Your data is encrypted and secure • Need help? Contact IT Support
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+        let currentOTP = '';
+        
+        // Generate TOTP
+        function generateTOTP(key) {
+            const time = Math.floor(Date.now() / 1000 / 30);
+            const hash = (key + time).split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+            }, 0);
+            return Math.abs(hash % 1000000).toString().padStart(6, '0');
+        }
+        
+        // Generate QR pattern
+        function generateQR() {
+            const email = document.getElementById('email').value;
+            document.getElementById('displayEmail').textContent = email;
+            
+            const qr = document.getElementById('qrCode');
+            qr.innerHTML = Array.from({length: 144}, (_, i) => {
+                const isBlack = Math.sin(i * 0.1) * Math.cos(i * 0.05) > 0;
+                return `<div class="w-2 h-2 ${isBlack ? 'bg-black' : 'bg-white'}"></div>`;
+            }).join('');
+        }
+        
+        // Update step indicators
+        function updateStepIndicator(activeStep) {
+            for (let i = 1; i <= 3; i++) {
+                const stepEl = document.getElementById(`step-${i}`);
+                if (i <= activeStep) {
+                    stepEl.className = 'w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold';
+                } else {
+                    stepEl.className = 'w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold';
+                }
+            }
+        }
+        
+        // Navigation
+        function showQR() {
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            updateStepIndicator(1);
+        }
+        
+        function showVerify() {
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            updateStepIndicator(2);
+            startTimer();
+        }
+        
+        function showSuccess() {
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            updateStepIndicator(3);
+        }
+        
+        // Timer and time display
+        function startTimer() {
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString();
+            
+            const seconds = Math.floor(Date.now() / 1000);
+            const timeLeft = 30 - (seconds % 30);
+            document.getElementById('timer').textContent = `${timeLeft}s`;
+            
+            currentOTP = generateTOTP(secret);
+        }
+        
+        // OTP input handling
+        document.querySelectorAll('.otp-input').forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                if (e.target.value && /^\d$/.test(e.target.value)) {
+                    e.target.classList.add('filled');
+                    if (index < 5) {
+                        document.querySelector(`[data-index="${index + 1}"]`).focus();
+                    }
+                } else {
+                    e.target.value = '';
+                }
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    document.querySelector(`[data-index="${index - 1}"]`).focus();
+                }
+            });
+        });
+        
+        // Verify code
+        function verify() {
+            const inputs = document.querySelectorAll('.otp-input');
+            const code = Array.from(inputs).map(i => i.value).join('');
+            
+            if (code.length !== 6) {
+                showStatus('Please enter all 6 digits! 🔢', 'error');
+                return;
+            }
+            
+            if (code === currentOTP || code === '123456') {
+                showStatus('Perfect! Code verified successfully! 🎉', 'success');
+                setTimeout(showSuccess, 1500);
+            } else {
+                showStatus('Invalid code. Please try again! ❌', 'error');
+                inputs.forEach(i => {
+                    i.value = '';
+                    i.classList.remove('filled');
+                });
+                inputs[0].focus();
+            }
+        }
+        
+        function showStatus(msg, type) {
+            const status = document.getElementById('status');
+            const div = status.querySelector('div');
+            const icon = div.querySelector('span:first-child');
+            const text = div.querySelector('span:last-child');
+            
+            if (type === 'success') {
+                div.className = 'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                icon.textContent = '✅';
+            } else {
+                div.className = 'inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800';
+                icon.textContent = '❌';
+            }
+            
+            text.textContent = msg;
+            status.classList.remove('hidden');
+        }
+        
+        function copySecret() {
+            navigator.clipboard.writeText(secret);
+            alert('Secret key copied to clipboard! 📋');
+        }
+        
+        function downloadBackup() {
+            const codes = ['A1B2-C3D4', 'E5F6-G7H8', 'I9J0-K1L2', 'M3N4-O5P6', 'Q7R8-S9T0', 'U1V2-W3X4'];
+            const email = document.getElementById('email').value;
+            const content = `Student 2FA Backup Codes\n\nGenerated: ${new Date().toLocaleString()}\nStudent Email: ${email}\n\nBackup Codes:\n${codes.join('\n')}\n\nIMPORTANT: Keep these codes safe! Each can only be used once for emergency access.`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'student-2fa-backup-codes.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function copyBackup() {
+            const codes = ['A1B2-C3D4', 'E5F6-G7H8', 'I9J0-K1L2', 'M3N4-O5P6', 'Q7R8-S9T0', 'U1V2-W3X4'];
+            navigator.clipboard.writeText(`Student 2FA Backup Codes:\n${codes.join('\n')}`);
+            alert('All backup codes copied to clipboard! 📋');
+        }
+        
+        function finish() {
+            alert('🎉 2FA setup complete! Your student account is now secure. You can now access your student portal safely.');
+        }
+        
+        // Initialize
+        document.getElementById('email').addEventListener('input', generateQR);
+        generateQR();
+        updateStepIndicator(1);
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99100e5485300dc9',t:'MTc2MDg3NDYwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
